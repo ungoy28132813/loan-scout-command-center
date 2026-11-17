@@ -648,42 +648,63 @@ export type Database = {
       lender_products: {
         Row: {
           amount_kind: string
+          apr_as_of: string | null
+          apr_source_url: string | null
+          channel_scope: string | null
           created_at: string
           id: string
           lender_id: string
           name: string
           official_url: string | null
+          product_note: string | null
           product_type: string
+          published_apr_max: number | null
+          published_apr_min: number | null
           published_max_amount: number | null
           published_min_amount: number | null
           pull_type: string
           research_status: string
+          source_verified_on: string | null
         }
         Insert: {
           amount_kind?: string
+          apr_as_of?: string | null
+          apr_source_url?: string | null
+          channel_scope?: string | null
           created_at?: string
           id?: string
           lender_id: string
           name: string
           official_url?: string | null
+          product_note?: string | null
           product_type?: string
+          published_apr_max?: number | null
+          published_apr_min?: number | null
           published_max_amount?: number | null
           published_min_amount?: number | null
           pull_type?: string
           research_status?: string
+          source_verified_on?: string | null
         }
         Update: {
           amount_kind?: string
+          apr_as_of?: string | null
+          apr_source_url?: string | null
+          channel_scope?: string | null
           created_at?: string
           id?: string
           lender_id?: string
           name?: string
           official_url?: string | null
+          product_note?: string | null
           product_type?: string
+          published_apr_max?: number | null
+          published_apr_min?: number | null
           published_max_amount?: number | null
           published_min_amount?: number | null
           pull_type?: string
           research_status?: string
+          source_verified_on?: string | null
         }
         Relationships: [
           {
@@ -1227,6 +1248,96 @@ export type Database = {
         }
         Relationships: []
       }
+      source_review_candidates: {
+        Row: {
+          bureau: string | null
+          created_at: string
+          criterion: string
+          evidence_status: string
+          id: string
+          lookback_months: number | null
+          not_enforced_reason: string | null
+          product_id: string
+          representable: boolean
+          resulting_rule_id: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rule_key: string | null
+          scope: string
+          score_model: string | null
+          seed_key: string
+          source_locator: string | null
+          source_title: string
+          source_url: string
+          threshold: number | null
+          verified_on: string
+        }
+        Insert: {
+          bureau?: string | null
+          created_at?: string
+          criterion: string
+          evidence_status?: string
+          id?: string
+          lookback_months?: number | null
+          not_enforced_reason?: string | null
+          product_id: string
+          representable?: boolean
+          resulting_rule_id?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_key?: string | null
+          scope: string
+          score_model?: string | null
+          seed_key: string
+          source_locator?: string | null
+          source_title: string
+          source_url: string
+          threshold?: number | null
+          verified_on: string
+        }
+        Update: {
+          bureau?: string | null
+          created_at?: string
+          criterion?: string
+          evidence_status?: string
+          id?: string
+          lookback_months?: number | null
+          not_enforced_reason?: string | null
+          product_id?: string
+          representable?: boolean
+          resulting_rule_id?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_key?: string | null
+          scope?: string
+          score_model?: string | null
+          seed_key?: string
+          source_locator?: string | null
+          source_title?: string
+          source_url?: string
+          threshold?: number | null
+          verified_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_review_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_review_candidates_resulting_rule_id_fkey"
+            columns: ["resulting_rule_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tradelines: {
         Row: {
           account_ref_last4: string | null
@@ -1369,6 +1480,10 @@ export type Database = {
           _meta?: Json
         }
         Returns: undefined
+      }
+      review_source_candidate: {
+        Args: { _decision: string; _id: string }
+        Returns: string
       }
     }
     Enums: {

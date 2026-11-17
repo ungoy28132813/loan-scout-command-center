@@ -24,12 +24,13 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
   const q = useQuery({ queryKey: ["matching", clientId], queryFn: async () => {
     const runs = (await supabase.from("match_runs").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1)).data ?? [];
     const run = runs[0] ?? null;
-    const [results, products, snaps] = await Promise.all([
+    const [results, products, snaps, active] = await Promise.all([
       run ? supabase.from("match_results").select("*").eq("run_id", run.id).order("rank") : Promise.resolve({ data: [] as never[] }),
       supabase.from("lender_products").select("*, lenders(name)"),
       supabase.from("published_snapshots").select("*").eq("client_id", clientId).order("version", { ascending: false }),
+      supabase.from("lender_rules").select("id", { count: "exact", head: true }).eq("approval_status", "active"),
     ]);
-    return { run, results: results.data ?? [], products: products.data ?? [], snaps: snaps.data ?? [] };
+    return { run, results: results.data ?? [], products: products.data ?? [], snaps: snaps.data ?? [], activeRules: active.count ?? 0 };
   } });
   const refresh = () => qc.invalidateQueries({ queryKey: ["matching", clientId] });
 
@@ -87,6 +88,7 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
         <CardHeader><CardTitle className="label-caps">Match engine</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">Deterministic evaluation against owner-approved, cited lender rules only. The suitability index (0–100) is relative fit — <b>not</b> approval probability. Unknown evidence never disqualifies.</p>
+          {q.data.activeRules === 0 && <p className="rounded border border-gold p-2 text-sm">No lender criteria have been approved by the owner yet. Products have published information only, so every result will be <b>Needs Review</b> with no score. Review sources under Lender Intelligence.</p>}
           {me.perms.can_run_matching ? <div className="flex flex-wrap items-center gap-2">
             <Select value={mode} onValueChange={(v) => setMode(v as "strict" | "expanded")}><SelectTrigger className="w-64"><SelectValue /></SelectTrigger><SelectContent>
               <SelectItem value="strict">Strict — verified primary sources only</SelectItem>

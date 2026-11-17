@@ -14,6 +14,30 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StatusBadge, FutureBadge } from "@/components/StatusBadge";
+import { SourceReviewQueue, CandidateRow, type Candidate } from "@/components/lenders/SourceReview";
+import type { Tables } from "@/integrations/supabase/types";
+
+type Product = Tables<"lender_products">;
+
+function ProductFacts({ p }: { p: Product }) {
+  return <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+    {p.channel_scope && <div>Scope: {p.channel_scope}</div>}
+    {(p.published_apr_min != null || p.published_apr_max != null) && <div>Marketed APR (product-level, not an offer): {p.published_apr_min ?? "?"}% – {p.published_apr_max ?? "?"}%{p.apr_as_of ? ` · as of ${p.apr_as_of}` : ""}{p.apr_source_url && <> · <a className="underline" href={p.apr_source_url} target="_blank" rel="noreferrer">source</a></>}</div>}
+    {p.source_verified_on && <div>Public source checked {p.source_verified_on}</div>}
+    {p.product_note && <div>{p.product_note}</div>}
+  </div>;
+}
+
+function ProductCard({ p, lender, rules, pending, onOpen }: { p: Product; lender: string; rules: number; pending: number; onOpen: () => void }) {
+  return <Card><CardContent className="space-y-2 p-4 text-sm">
+    <div className="label-caps text-muted-foreground">{lender}</div>
+    <button onClick={onOpen} className="text-left font-semibold hover:underline">{p.name}</button>
+    <div>{p.published_min_amount == null && p.published_max_amount == null ? "Published range: not stated" : `Published range: ${fmtMoney(p.published_min_amount)} – ${fmtMoney(p.published_max_amount)}`} <span className="text-xs text-muted-foreground">({p.amount_kind === "loan_cash" ? "loan cash" : p.amount_kind.replace("_", " ")}; not a guaranteed amount)</span></div>
+    <ProductFacts p={p} />
+    <div className="flex flex-wrap gap-1"><StatusBadge value="unknown" label="published product information; underwriting review pending" />{pending > 0 && <StatusBadge value="pending" label={`${pending} awaiting source review`} />}<StatusBadge value={rules ? "verified" : "draft"} label={`${rules} active rule${rules === 1 ? "" : "s"}`} /></div>
+    {p.official_url && <a href={p.official_url} target="_blank" rel="noreferrer" className="text-xs underline">Official page</a>}
+  </CardContent></Card>;
+}
 
 export const Route = createFileRoute("/_authenticated/lenders")({
   head: () => ({ meta: [{ title: "Lender Intelligence — Loan Scout Matching Tool" }, { name: "description", content: "Lender products, cited rules and provenance." }, { property: "og:title", content: "Lender Intelligence — Loan Scout" }, { property: "og:description", content: "Lender products, cited rules and provenance." }] }),
@@ -27,8 +51,8 @@ function Lenders() {
   const [search, setSearch] = useState(""); const [ptype, setPtype] = useState("all"); const [rs, setRs] = useState("all");
   const [selected, setSelected] = useState<string | null>(null); const [compare, setCompare] = useState<string[]>([]);
   const q = useQuery({ queryKey: ["lenders"], queryFn: async () => {
-    const [l, p, r, s] = await Promise.all([supabase.from("lenders").select("*").order("name"), supabase.from("lender_products").select("*"), supabase.from("lender_rules").select("*").order("created_at", { ascending: false }), supabase.from("shortlists").select("*")]);
-    return { lenders: l.data ?? [], products: p.data ?? [], rules: r.data ?? [], shortlists: s.data ?? [] };
+    const [l, p, r, s, c] = await Promise.all([supabase.from("lenders").select("*").order("name"), supabase.from("lender_products").select("*").order("name"), supabase.from("lender_rules").select("*").order("created_at", { ascending: false }), supabase.from("shortlists").select("*"), supabase.from("source_review_candidates").select("*").order("seed_key")]);
+    return { lenders: l.data ?? [], products: p.data ?? [], rules: r.data ?? [], shortlists: s.data ?? [], candidates: c.data ?? [] };
   } });
   const refresh = () => qc.invalidateQueries({ queryKey: ["lenders"] });
   const list = useMemo(() => (q.data?.lenders ?? []).filter((l) => l.name.toLowerCase().includes(search.toLowerCase()) && (rs === "all" || l.research_status === rs) && (ptype === "all" || q.data!.products.some((p) => p.lender_id === l.id && p.product_type === ptype))), [q.data, search, rs, ptype]);
@@ -42,7 +66,9 @@ function Lenders() {
       <PageHeader title="Lender Intelligence" kicker={`${q.data.lenders.length} lender identities · ${q.data.products.length} products`}>
         <Button variant="outline" disabled title="Not built yet"><Sparkles className="mr-2 h-4 w-4" />On-demand AI research <span className="ml-2"><FutureBadge phase="Phase 3" /></span></Button>
       </PageHeader>
-      <Alert className="mb-4"><AlertDescription>Seeded lender <b>identities only</b>. No product requirements, cutoffs, APRs or bureau-pull data are pre-filled — every rule must be entered with a source URL, title, verification date and tier, then approved by the owner before it affects matching.</AlertDescription></Alert>
+      <Alert className="mb-4"><AlertDescription>All {q.data.lenders.length} lender identities are listed. {q.data.products.length} products carry <b>published product information</b> from official pages; their underwriting criteria are <b>awaiting owner source review</b> and do not affect matching until approved. Marketed amounts and APRs are product-level ranges, not offers or guaranteed amounts. Nothing here is an approval probability.</AlertDescription></Alert>
+      <SourceReviewQueue candidates={q.data.candidates} isOwner={isOwner} onDone={refresh} label={(pid) => { const p = q.data!.products.find((x) => x.id === pid); return `${q.data!.lenders.find((l) => l.id === p?.lender_id)?.name ?? ""} — ${p?.name ?? ""}`; }} />
+      {q.data.products.length > 0 && <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{q.data.products.map((p) => <ProductCard key={p.id} p={p} lender={q.data!.lenders.find((l) => l.id === p.lender_id)?.name ?? ""} rules={q.data!.rules.filter((r) => r.product_id === p.id && r.approval_status === "active").length} pending={q.data!.candidates.filter((c) => c.product_id === p.id && c.review_status === "pending").length} onOpen={() => setSelected(p.lender_id)} />)}</div>}
       {isOwner && proposed.length > 0 && <Card className="mb-4 border-gold"><CardHeader><CardTitle className="label-caps">Rule changes awaiting owner approval ({proposed.length})</CardTitle></CardHeader><CardContent className="space-y-2">
         {proposed.map((r) => { const p = q.data!.products.find((x) => x.id === r.product_id); return <RuleRow key={r.id} r={r} label={`${q.data!.lenders.find((l) => l.id === p?.lender_id)?.name} — ${p?.name}`} owner onDone={refresh} me={me.id} allRules={q.data!.rules} />; })}
       </CardContent></Card>}
@@ -57,7 +83,7 @@ function Lenders() {
             <div className="font-medium">{l.name}</div><div className="flex items-center gap-2 text-xs text-muted-foreground">{q.data!.products.filter((p) => p.lender_id === l.id).length} products · <StatusBadge value={l.research_status === "verified" ? "verified" : "unknown"} label={l.research_status.replace(/_/g, " ")} /></div></button></li>)}</ul>
         </CardContent></Card>
         <div className="space-y-4">
-          {lender ? <LenderDetail lender={lender} products={q.data.products.filter((p) => p.lender_id === lender.id)} rules={q.data.rules} isOwner={isOwner} canPropose={me.perms.can_propose_rules} me={me.id} compare={compare} setCompare={setCompare} onDone={refresh} /> : <Card><CardContent className="p-6 text-sm text-muted-foreground">Select a lender to view products, cited rules and provenance.</CardContent></Card>}
+          {lender ? <LenderDetail lender={lender} products={q.data.products.filter((p) => p.lender_id === lender.id)} rules={q.data.rules} candidates={q.data.candidates} isOwner={isOwner} canPropose={me.perms.can_propose_rules} me={me.id} compare={compare} setCompare={setCompare} onDone={refresh} /> : <Card><CardContent className="p-6 text-sm text-muted-foreground">Select a lender to view products, cited rules and provenance.</CardContent></Card>}
           <Compare ids={compare} data={q.data} clear={() => setCompare([])} />
           <Shortlists data={q.data} compare={compare} onLoad={setCompare} onDone={refresh} />
         </div>
@@ -89,7 +115,7 @@ function RuleRow({ r, label, owner, onDone, me, allRules }: { r: RuleT; label?: 
   </div>;
 }
 
-function LenderDetail({ lender, products, rules, isOwner, canPropose, me, compare, setCompare, onDone }: { lender: { id: string; name: string; official_url: string | null; research_status: string }; products: { id: string; name: string; product_type: string; official_url: string | null; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string; research_status: string }[]; rules: RuleT[]; isOwner: boolean; canPropose: boolean; me: string; compare: string[]; setCompare: (v: string[]) => void; onDone: () => void }) {
+function LenderDetail({ lender, products, rules, candidates, isOwner, canPropose, me, compare, setCompare, onDone }: { lender: { id: string; name: string; official_url: string | null; research_status: string }; products: Product[]; rules: RuleT[]; candidates: Candidate[]; isOwner: boolean; canPropose: boolean; me: string; compare: string[]; setCompare: (v: string[]) => void; onDone: () => void }) {
   const [np, setNp] = useState({ name: "", type: "unknown", url: "", min: "", max: "", kind: "unknown", pull: "unknown" });
   const [lurl, setLurl] = useState(lender.official_url ?? ""); const [lrs, setLrs] = useState(lender.research_status);
   const addProduct = async () => { if (!np.name.trim()) return; const { error } = await supabase.from("lender_products").insert({ lender_id: lender.id, name: np.name.slice(0, 120), product_type: np.type, official_url: np.url || null, published_min_amount: np.min ? Number(np.min) : null, published_max_amount: np.max ? Number(np.max) : null, amount_kind: np.kind, pull_type: np.pull }); if (error) toast.error(error.message); else { setNp({ name: "", type: "unknown", url: "", min: "", max: "", kind: "unknown", pull: "unknown" }); onDone(); } };
@@ -106,7 +132,9 @@ function LenderDetail({ lender, products, rules, isOwner, canPropose, me, compar
         <div className="flex flex-wrap items-center justify-between gap-2"><div><b>{p.name}</b> <span className="text-xs text-muted-foreground">· {p.product_type.replace(/_/g, " ")}</span></div>
           <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={compare.includes(p.id)} onChange={(e) => setCompare(e.target.checked ? [...compare, p.id] : compare.filter((x) => x !== p.id))} />Compare</label></div>
         <div className="text-xs text-muted-foreground">Published range: {p.published_min_amount == null && p.published_max_amount == null ? "Unknown" : `${fmtMoney(p.published_min_amount)} – ${fmtMoney(p.published_max_amount)}`} ({p.amount_kind === "credit_limit" ? "credit limit — not cash" : p.amount_kind.replace("_", " ")}) · Pull: {p.pull_type.replace("_", " ")} {p.official_url && <a href={p.official_url} target="_blank" rel="noreferrer" className="underline">official page</a>}</div>
-        <div className="mt-2 space-y-2">{pr.length === 0 ? <StatusBadge value="unknown" label="awaiting verified research — no rules" /> : pr.filter((r) => r.approval_status !== "rejected").map((r) => <RuleRow key={r.id} r={r} owner={isOwner} onDone={onDone} me={me} allRules={rules} />)}</div>
+        <ProductFacts p={p} />
+        {candidates.filter((c) => c.product_id === p.id).length > 0 && <div className="mt-2 space-y-2"><div className="label-caps text-muted-foreground">Source criteria</div>{candidates.filter((c) => c.product_id === p.id).map((c) => <CandidateRow key={c.id} c={c} isOwner={isOwner} onDone={onDone} />)}</div>}
+        <div className="mt-2 space-y-2">{pr.length === 0 ? <StatusBadge value="unknown" label="no active engine rules" /> : pr.filter((r) => r.approval_status !== "rejected").map((r) => <RuleRow key={r.id} r={r} owner={isOwner} onDone={onDone} me={me} allRules={rules} />)}</div>
         {canPropose && <ProposeRule productId={p.id} me={me} onDone={onDone} />}
       </div>; })}
       {isOwner && <div className="rounded border border-dashed p-3"><div className="label-caps mb-2 text-muted-foreground">Add product (from official source)</div>
@@ -149,7 +177,7 @@ function ProposeRule({ productId, me, onDone }: { productId: string; me: string;
   </div>;
 }
 
-type Data = { lenders: { id: string; name: string }[]; products: { id: string; lender_id: string; name: string; product_type: string; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string }[]; rules: RuleT[]; shortlists: { id: string; name: string; product_ids: string[] }[] };
+type Data = { lenders: { id: string; name: string }[]; products: Product[]; rules: RuleT[]; shortlists: { id: string; name: string; product_ids: string[] }[] };
 
 function Compare({ ids, data, clear }: { ids: string[]; data: Data; clear: () => void }) {
   if (ids.length < 2) return null;

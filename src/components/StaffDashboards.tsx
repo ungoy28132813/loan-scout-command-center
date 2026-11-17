@@ -25,7 +25,7 @@ function useStaffData() {
   return useQuery({
     queryKey: ["staff-dashboard"],
     queryFn: async () => {
-      const [clients, assignments, results, snaps, apps, tasks, reports, rules, products, lenders] = await Promise.all([
+      const [clients, assignments, results, snaps, apps, tasks, reports, rules, products, lenders, sources] = await Promise.all([
         supabase.from("clients").select("id, display_name, stage, is_demo, created_at"),
         supabase.from("client_assignments").select("client_id, employee_id, active, temporary_until").eq("active", true),
         supabase.from("match_results").select("id, client_id, review_status").eq("review_status", "proposed"),
@@ -36,11 +36,12 @@ function useStaffData() {
         supabase.from("lender_rules").select("id, approval_status, verified_on, stale_after_days"),
         supabase.from("lender_products").select("id"),
         supabase.from("lenders").select("id, research_status"),
+        supabase.from("source_review_candidates").select("id").eq("review_status", "pending"),
       ]);
       return {
         clients: clients.data ?? [], assignments: assignments.data ?? [], proposed: results.data ?? [], snaps: snaps.data ?? [],
         apps: apps.data ?? [], tasks: tasks.data ?? [], reports: reports.data ?? [], rules: rules.data ?? [],
-        products: products.data ?? [], lenders: lenders.data ?? [],
+        products: products.data ?? [], lenders: lenders.data ?? [], pendingSources: sources.data?.length ?? 0,
       };
     },
   });
@@ -65,6 +66,7 @@ export function OwnerCommandCenter({ me }: { me: Me }) {
         <Stat label="Matches awaiting review" value={data.proposed.length} to="/clients" />
         <Stat label="Published needing re-review" value={data.snaps.filter((s) => s.status === "published" && s.needs_rereview).length} hint="New report uploaded since publish" />
         <Stat label="Employees" value={team.data ?? 0} to="/team" />
+        <Stat label="Awaiting source review" value={data.pendingSources} to="/lenders" hint="Lender criteria — owner decides" />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card><CardHeader><CardTitle className="label-caps">Case stages</CardTitle></CardHeader><CardContent className="space-y-2">

@@ -8,5 +8,8 @@
 - [ ] Passkey sign-in
 - [ ] Forced remote sign-out on deactivation
 - [ ] Automatic release of scheduled publications
-- [ ] Enter real lender products + cited rules (owner research)
+- [x] First real product catalog (5 products + scoped Prosper Note Channel record) and owner source review queue
+- [ ] Owner reviews 13 pending source criteria (waiting on owner)
+- [ ] Questionnaire inputs + rule types for existing-account age, membership duration, direct deposit (kept as notes for now)
+- [ ] Optional: Chase My Chase Loan as a card-feature product type (not added)
 ## Phase 2 / 3 — see /roadmap page in app
