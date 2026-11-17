@@ -10,6 +10,7 @@ import { loadFacts } from "@/lib/facts";
 import { productBelongsToGoal, scopeProductsToGoal, type GoalType } from "@/lib/business-funding";
 import { MATCH_STATUS_LABEL, fmtDate, fmtMoney } from "@/lib/labels";
 import { DISCLAIMER, type SnapshotItem } from "@/components/client/PublishedStrategy";
+import { StrategyPdfDownload } from "@/components/client/StrategyPdfDownload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1694,39 +1694,51 @@ export type Database = {
       }
       readiness_tasks: {
         Row: {
+          client_completed_at: string | null
           client_id: string
           client_note: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          evidence_document_id: string | null
           id: string
+          position: number
           published: boolean
           status: string
           title: string
+          verified_at: string | null
           verified_by: string | null
         }
         Insert: {
+          client_completed_at?: string | null
           client_id: string
           client_note?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          evidence_document_id?: string | null
           id?: string
+          position?: number
           published?: boolean
           status?: string
           title: string
+          verified_at?: string | null
           verified_by?: string | null
         }
         Update: {
+          client_completed_at?: string | null
           client_id?: string
           client_note?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          evidence_document_id?: string | null
           id?: string
+          position?: number
           published?: boolean
           status?: string
           title?: string
+          verified_at?: string | null
           verified_by?: string | null
         }
         Relationships: [
@@ -1735,6 +1747,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "readiness_tasks_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -2151,10 +2170,16 @@ export type Database = {
         Args: { _profile: string; _viewer: string }
         Returns: boolean
       }
-      client_mark_task: {
-        Args: { _note: string; _task: string }
-        Returns: undefined
-      }
+      client_mark_task:
+        | { Args: { _note: string; _task: string }; Returns: undefined }
+        | {
+            Args: {
+              _evidence_document_id: string
+              _note: string
+              _task: string
+            }
+            Returns: undefined
+          }
       correct_tradeline: {
         Args: {
           _balance: number
@@ -2215,6 +2240,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      prepare_strategy_export: { Args: { _snapshot_id: string }; Returns: Json }
       review_product_research: {
         Args: { _decision: string; _id: string }
         Returns: undefined

@@ -5,9 +5,10 @@ import { MATCH_STATUS_LABEL, fmtMoney } from "@/lib/labels";
 
 export interface SnapshotItem {
   product_id: string; lender: string; product: string; product_type: string; official_url: string | null;
+  source_verified_on?: string | null;
   published_min: number | null; published_max: number | null; amount_kind: string; pull_type: string;
   status: string; score: number | null; sequence: number;
-  conditions: { label: string; outcome: string; required: string; observed: string; source_title: string; source_url: string }[];
+  conditions: { label: string; outcome: string; required: string; observed: string; source_title: string; source_url: string; verified_on?: string | null }[];
   checklist: string[]; documents: string[]; client_summary: string;
   scenario_amounts?: { conservative: number | null; medium: number | null; expanded: number | null };
   payment_scenarios?: Record<string, { low: number | null; high: number | null; reason: string }>;
