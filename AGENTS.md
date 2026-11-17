@@ -47,3 +47,9 @@ use the editor.
 - Historical comparison and utilization scenarios use the pure, in-memory `src/lib/credit-analysis.ts`; unverified or ambiguous rows never become confirmed changes or combined totals, and scenarios never mutate reports or match records. Why: hypothetical arithmetic must remain reproducible and honest.
 - Business goals require a same-client `business_profile_id`; `loadFacts` uses only that profile and its business-scoped answers, while personal goals exclude business answers and product scope is explicit. Why: one business or personal profile must never inherit another's finances.
 - Scanned-report OCR uses only versioned assets under `public/ocr/` and browser-local pdf.js/Tesseract workers; OCR pages and text must never be logged, persisted, or sent to external services. Why: private credit reports require local-only image processing without CDN dependencies.
+
+
+## Codex continuity
+- Before working, read `docs/CODEX_HANDOFF.md`, `docs/BUILD_QUEUE.md`, and `roadmap.md`. The handoff preserves the approved Q1-90 decisions and the partial Section 07 checkpoint.
+- Continue this existing application. Reconcile current code with the recorded queue; do not restart the scaffold or treat partial work as finished.
+- Keep the repository private, preserve the Lovable-managed block above, coordinate writers, and do not deploy production or activate lender policies without explicit owner approval.
