@@ -1,14 +1,55 @@
-# Welcome to your Lovable project
+# Loan Scout Command Center
+
+BUILD NOW, NOT PLAN MODE. Create a BRAND-NEW full-stack TypeScript/Tailwind/shadcn UI project called "LOAN SCOUT MATCHING TOOL" for Loan Scout LLC. This is an internal financial-advisor/recommendation platform with distinct owner, employee and client experiences. First build a cohesive usable Phase 1 vertical slice (not just a landing page/mockup). Keep all future requirements and architecture planned but DO NOT falsely claim functionality completed. Prioritize actual database-backed auth, protected views, access rules, client management, client report upload workflow and matching/review/publish UX. If permission/secret setup is needed, implement all independently possible parts and clearly report pending approvals.
+
+DESIGN AND BRAND:
+- Exact company brand: Loan Scout LLC, software title LOAN SCOUT MATCHING TOOL. The original user-approved Loan Scout LLC logo is to be placed UNCHANGED, with a separate "MATCHING TOOL" subtitle. If original image file isn't attached/accessible to Lovable yet, put a clearly labeled replaceable logo-image component/placeholder: DO NOT generate a counterfeit logo; we'll upload the original later.
+- Brand palette from owner's approved Loan Scout LLC color guide: Scout Emerald #007A53 (primary actions), Forest Emerald #00563C, Trail Mint #5EE2B0 (dark mode accents), Scout Charcoal #2B333D (dark background), Slate #35414B, Pine Slate #42535C, Scout Mist #F4F8F5 (light background), Soft Sage #D5E5DC, Silver Sage #B9C8C4, Scout Gold #D8B879 (sparingly), White #FFFFFF.
+- Typography Inter for UI/body, Bebas Neue for display headlines, Montserrat for select bold uppercase labels; preserved custom logo lettering. Responsive desktop/mobile layouts; high accessibility/contrast. Support BOTH user-switchable light and dark theme, persisted per user.
+- Sophisticated premium-fintech aesthetics but not noisy gradients or inflated claims. Never fake real client names, private credit reports, funding approvals or underwriting eligibility. Demo/sample data should be explicitly labeled DEMO and isolated from production.
+
+NONNEGOTIABLE SECURITY/PRODUCT HONESTY:
+- This handles extremely sensitive credit/identity/financial data. DO NOT make real reports publicly accessible. Must have securely authenticated private files, server-enforced per-client permissions and RLS/authorizations, no unauthorized direct links, no raw PII in logs, server-side document access checks and owner-controlled deletions. No upload of actual client reports until protections are working. Include affirmative consent/authorization to analyze reports, privacy notices, account access monitoring, audit logs. Retain reports until owner deletes, subject to lawful retention. All sensitive storage encrypted at rest/in transit. Use secure managed backend/cloud database and secure file storage; show setup limitations honestly.
+- ROLE MODEL: Owner full control, including lender policy changes and only person who can permanently delete credit reports; employees get access only to owner-assigned/shared clients and configurable department/feature permissions; clients can access ONLY their own files, approved published funding recommendations/announcements, and their funding readiness tasks. Owner manually assigns/reassigns, employee departure revokes access and transfers clients. Employee and owner can approve/publish lender recommendations, NEVER clients. Every action and rule/permission change auditable.
+- Auth: passwordless email link or passkey for employees, clients email magic link AND passkey support where supported. No insecure fake login. Mark passkey unsupported/unimplemented clearly rather than fake it. Secure sessions revocable; avoid password handling without necessary.
+- No automatic lender applications, lender API submissions, credit bureau pulls, email/SMS alerting, scheduled research, two-way messaging. Clients read in-portal announcements but cannot reply. Client application statuses are read-only to clients; employees change them; when status changes ONLY update client dashboard (plus audit log), no notifications/tasks triggered.
+- Human review of lender matches before ANY publication; strict separation proposed/internal vs published snapshots. Match score 0–100 is a suitability score NOT approval probability. No guarantee of approval/funding. Never conflate credit limit with cash funding.
+- Never fabricate lender cutoffs, lender FICO underwriting models, tradeline minima, DTI, pricing score bands, pull bureau, etc. No standard or universal 'OCC FICO 660/DTI 50%', '10% exception', '40/60 pricing' fabricated rules. Distinguish source verified hard rules vs secondary-source/observational estimates vs unknown. Missing values => Unknown, NEVER 0 or auto-disqualification. Preserve bureau and FICO model separately (FICO8, 9, VantageScore are NOT interchangeable).
+- Provide provenance for every lender rule, source URL/title and verified/effective date, confidence/source-tier, stale warning, version log, owner approval before active changes. Initial dataset can seed only LENDER IDENTITIES, not imaginary verified product requirements or APRs. Mark underwriting data 'awaiting verified research' until truly sourced.
+
+PHASE 1 CORE ROUTES/COMPONENTS TO BUILD:
+- Responsive landing/login flow for owner/employee/client, routes protected by auth+role.
+- OWNER COMPLETE COMMAND CENTER: oversight cards for client management, cases, status counts from actual DB, pending review, team management/permissions and manual assignments, lender rules/source freshness/research (on-demand button can be placeholder if no backend integration, labeled accordingly), Security Center/audit logs.
+- EMPLOYEE COMBINED COMMAND CENTER: assigned clients, reports, credit analysis, lender matches, funding plans, pending approvals, app statuses, pending tasks. Support searchable client directory with sorts, advanced filters, SAVE VIEWS (user selected B+C, not bulk-action-heavy D). Employee privilege matrix owner-controlled, roles Credit Analyst/Funding Specialist/Client Manager + custom, individual feature toggles, temporary access to clients.
+- CLIENT FUNDING DASHBOARD (NOT broad credit dashboard): funding goals, published/approved lender recommendations, side-by-side detailed comparisons and guided application cards (checklists, official lender links, document requirements, application sequence), application statuses, published funding-readiness actions and client announcements. No internal comments or rejected options visible.
+- Client registrations manual, optional public signup toggle (owner), invitation flow. Unassigned registration onboarding behavior left UNDECIDED by Q87, implement safest neutral no new client lender publication until owner assignment.
+- DOCUMENT LIBRARY: six manually selected categories Credit Reports, Identification, Income, Banking, Business Documents, Other. Employees and clients can upload PDFs (credit reports exclusively PDF), multiple files per batch, three-bureau combined or individual reports, private stored only. Basic documents categories (not AI categorization). Employee requests documents only via simple read-only announcements, not workflow/deadlines/reviews.
+- CREDIT REPORT PIPELINE: upload, document records, report snapshots/status, extraction/analysis structure for Experian/Equifax/TransUnion, model/version/date, bureau-specific account inquiries, lates, collections, utilization, history and duplicates. Implement genuine extraction mechanism if supported, and reliable fail-safe: unreadable/critical missing -> flagged unknown, request clearer PDF or correction backed by source, employee corrections audited, recalculate results. Do not pretend unsupported PDFs are parsed. Reconcile overlapping accounts cross-bureau without double-counting while preserving bureau-specific data. Multi-report batching. Human can view and correct extracted fields, with old/new value, reason, timestamp.
+- FINANCIAL QUESTIONNAIRE SMART CONDITIONAL: ONLY ask needed financial questions after report/profile analysis; every question has "I Don't Know / Skip for Now"; missing answers marked unknown/unverified, targeted prompts for income/employment/housing/banking relations, business time/revenue/expenses if business product relevant, individual business profiles and multiple separate funding goals; auto recompute matching when new data.
+- MATCH ENGINE: deterministic evaluation based on strictly verified source-backed lender product rules; statuses Potential Match / Needs Review / Doesn't Meet Published Requirements. Each condition pass/fail/unknown with explanation and original evidence; strict vs expanded owner/team selectable, expanded secondary inferences clearly marked and never disqualify based on estimates. Relative 0-100 suitability index transparent not approval probability. Detailed lender mismatch with citations and prioritized improvement steps; warn about uncertain/unknown evidence and critical extraction failure.
+- MATCH REVIEW CENTER: employees see source docs, model/bureau/DTI/inquiries/derogatories/utilization/missing data, reasons, scores, estimated amounts vs published product ranges, application risk/pulls soft/hard if documented. Staff approve, reject, reorder, add private notes, manually add/remove lender with reason and eligibility warning, all audited. Publish individual, group or whole strategy, save drafts, schedule/withdraw revisions after human approval; old published snapshots/history preserved. Never auto-publish.
+- APPLICATION PIPELINE: five only Not Started, Submitted, Pending, Approved, Denied. ONLY employees or owner can update; clients read status and date, no triggered messages or tasks. Q70 detailed outcome capture SKIPPED, so do not impose extensive mandatory fields.
+- FUNDING READINESS: owner/staff select and approve client-facing recommendations/actions/roadmap; client can mark tasks complete, notes/optional files; employee verify before improvements treated as confirmed. Internal employee notes distinct from client announcements. NO two-way messaging.
+- PDF EXPORT: approved client funding strategies and report with honest disclaimers and no unsupported claims.
+- Lender search/filter/saved shortlists, side-by-side product comparison, product-level lender intelligence views, detailed provenance and underwriting freshness warnings, on-demand AI-research action with owner-only review before updating rules; no scheduled auto-research.
+
+SEED INITIAL 24 LENDER IDENTITIES ONLY, DO NOT GUESS THEIR POLICIES: AmeriCU, American Express, Bank of America, Best Egg, Chase, Citizens, Digital Federal Credit Union (DCU), Dollar Bank, Elan Financial Services, FNBO (First National Bank of Omaha), Fifth Third Bank, First Citizens Bank, Happy Money, Huntington Bank, KeyBank, M&T Bank, My Apex Card, NIH Federal Credit Union, Navy Federal Credit Union, Prosper, SoFi, Truist, Wells Fargo, Zions Bank. 35 original products names not available in this prompt; no invented 35. Example verified public 2026 Prosper note-channel requirements: TU FICO8 >=600, <=9 inquiries in 6 months, DTI <=50%, individual >=2 open tradelines, joint >=1 per applicant, no bankruptcy in 12 months, BUT do NOT hardcode without precise documented 2026 SEC citation and product-scope accuracy. Make seed rows for all 24 with unknown fields.
+
+ROADMAP KEEP IN PROJECT KNOWLEDGE NOT FALSELY MARK BUILT:
+Phase 2: longitudinal credit report compare/progress visuals; account utilization and paydown simulator (no exact FICO prediction); business funding/income/debt analysis; consolidated funding scenario planning (conservative/moderate/expanded) with affordability, multiple business-specific goals, guided lender application sequence.
+Phase 3: on-demand research of new lender underwriting and RBP (NOT background schedule), owner-approved rule versions; bureau pull historical intelligence by state/product/date with uncertainty labels; recorded lender outcomes and observations never promoted to policy automatically.
+Accepted earlier detailed specs include using PDF only for credit reporting, employees must manually assign clients, client can upload reports, only owner delete reports, client sees approved results, owner/employee approval, saved client directory views, read-only announcements, default no automated status notifications, owner complete command center. Q73 published-lender recommendation on new report SKIPPED, default safe review-required and preserve previous approved snapshot, label review status rather than secretly change. Q87 unassigned onboarding SKIPPED, neutral safeguard. Q70 detail outcome recording SKIPPED.
+Build NOW. Start with strong polished authentic user flows. Set database and auth, secure storage, server enforced permission/RLS, seeded lenders and deterministic honest matching skeleton. Don't trade security for superficial demo features. For unavailable capabilities add explicit 'coming in future phase' not fake buttons. Produce concrete code plus preview and identify what remains unimplemented.
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/7644a367-5d5b-4460-94f0-a1594863acc9).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +61,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
