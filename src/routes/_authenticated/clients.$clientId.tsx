@@ -17,7 +17,8 @@ import { GoalsPanel } from "@/components/client/GoalsPanel";
 import { QuestionnairePanel } from "@/components/client/QuestionnairePanel";
 import { MatchingPanel } from "@/components/client/MatchingPanel";
 import { FundingPlannerPanel } from "@/components/client/FundingPlannerPanel";
-import { ApplicationsPanel, ReadinessPanel, AnnouncementsPanel, NotesPanel } from "@/components/client/OpsPanels";
+import { ApplicationsPanel } from "@/components/client/ApplicationsPanel";
+import { ReadinessPanel, AnnouncementsPanel, NotesPanel } from "@/components/client/OpsPanels";
 
 export const Route = createFileRoute("/_authenticated/clients/$clientId")({
   head: () => ({ meta: [{ title: "Client file — Loan Scout Matching Tool" }, { name: "description", content: "Client case file." }, { property: "og:title", content: "Client file — Loan Scout" }, { property: "og:description", content: "Client case file." }, { name: "robots", content: "noindex" }] }),

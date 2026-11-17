@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, DemoBadge } from "@/components/StatusBadge";
 import { APP_STATUSES, fmtDate } from "@/lib/labels";
 import { isStale } from "@/lib/match-engine";
+import { monthlyApplicationMetrics, shiftMonth } from "@/lib/application-pipeline";
 
 function Stat({ label, value, to, hint }: { label: string; value: number | string; to?: string; hint?: string }) {
   const body = (
@@ -21,16 +22,34 @@ function Stat({ label, value, to, hint }: { label: string; value: number | strin
   return to ? <Link to={to}>{body}</Link> : body;
 }
 
+function MonthlyApplicationMetrics({ apps, clients, outcomes }: {
+  apps: { id: string; client_id: string; status: string; status_date: string }[];
+  clients: { id: string; is_demo: boolean }[];
+  outcomes: { application_id: string; verification_status: string }[];
+}) {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const rows = apps.map((app) => ({
+    id: app.id, status: app.status, statusDate: app.status_date,
+    isDemo: clients.find((client) => client.id === app.client_id)?.is_demo ?? true,
+    outcomeVerification: outcomes.find((outcome) => outcome.application_id === app.id)?.verification_status ?? null,
+  }));
+  const months = [monthlyApplicationMetrics(rows, currentMonth), monthlyApplicationMetrics(rows, shiftMonth(currentMonth, -1))];
+  return <Card><CardHeader><CardTitle className="label-caps">Monthly application records</CardTitle><p className="text-sm text-muted-foreground">Actual non-demo tracking rows only. Verified counts require staff-checked lender evidence; self-reports and original recommendations are not verified outcomes.</p></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
+    {months.map((metric) => <div key={metric.month} className="rounded border p-4"><div className="font-display text-2xl">{metric.month}</div><div className="mt-1 text-xs text-muted-foreground">{metric.total} recorded · {metric.verifiedTotal} lender-evidence verified</div><div className="mt-3 space-y-1">{APP_STATUSES.map((status) => <div key={status.value} className="flex justify-between text-sm"><span>{status.label}</span><span>{metric.counts[status.value]} recorded · {metric.verifiedCounts[status.value]} verified</span></div>)}</div></div>)}
+  </CardContent></Card>;
+}
+
 function useStaffData() {
   return useQuery({
     queryKey: ["staff-dashboard"],
     queryFn: async () => {
-      const [clients, assignments, results, snaps, apps, tasks, reports, rules, products, lenders, sources] = await Promise.all([
+      const [clients, assignments, results, snaps, apps, outcomes, tasks, reports, rules, products, lenders, sources] = await Promise.all([
         supabase.from("clients").select("id, display_name, stage, is_demo, created_at"),
         supabase.from("client_assignments").select("client_id, employee_id, active, temporary_until").eq("active", true),
         supabase.from("match_results").select("id, client_id, review_status").eq("review_status", "proposed"),
         supabase.from("published_snapshots").select("id, client_id, status, needs_rereview"),
         supabase.from("applications").select("id, client_id, status, lender_label, status_date"),
+        supabase.from("application_outcomes").select("application_id, verification_status"),
         supabase.from("readiness_tasks").select("id, client_id, status, title").eq("status", "client_marked_done"),
         supabase.from("credit_reports").select("id, client_id, extraction_status"),
         supabase.from("lender_rules").select("id, approval_status, verified_on, stale_after_days"),
@@ -40,7 +59,7 @@ function useStaffData() {
       ]);
       return {
         clients: clients.data ?? [], assignments: assignments.data ?? [], proposed: results.data ?? [], snaps: snaps.data ?? [],
-        apps: apps.data ?? [], tasks: tasks.data ?? [], reports: reports.data ?? [], rules: rules.data ?? [],
+        apps: apps.data ?? [], outcomes: outcomes.data ?? [], tasks: tasks.data ?? [], reports: reports.data ?? [], rules: rules.data ?? [],
         products: products.data ?? [], lenders: lenders.data ?? [], pendingSources: sources.data?.length ?? 0,
       };
     },
@@ -68,6 +87,7 @@ export function OwnerCommandCenter({ me }: { me: Me }) {
         <Stat label="Employees" value={team.data ?? 0} to="/team" />
         <Stat label="Awaiting source review" value={data.pendingSources} to="/lenders" hint="Lender criteria — owner decides" />
       </div>
+      <div className="mt-6"><MonthlyApplicationMetrics apps={data.apps} clients={data.clients} outcomes={data.outcomes} /></div>
       {(data.clients.length === 0 || activeRules.length === 0) && <Card className="mt-6 border-primary">
         <CardHeader><CardTitle className="font-display text-3xl">Set up your workspace</CardTitle><p className="text-sm text-muted-foreground">Start with a client file. Review lender sources separately; nothing becomes an underwriting rule without your decision.</p></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
@@ -121,6 +141,7 @@ export function EmployeeCommandCenter({ me }: { me: Me }) {
         <Stat label="Matches pending approval" value={data.proposed.length} />
         <Stat label="Tasks to verify" value={data.tasks.length} />
       </div>
+      <div className="mt-6"><MonthlyApplicationMetrics apps={data.apps} clients={data.clients} outcomes={data.outcomes} /></div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle className="label-caps">Assigned clients</CardTitle></CardHeader><CardContent>
           {data.clients.length === 0 ? <p className="text-sm text-muted-foreground">The owner hasn't assigned you any clients yet.</p> :

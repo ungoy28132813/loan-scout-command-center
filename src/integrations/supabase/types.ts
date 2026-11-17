@@ -76,12 +76,116 @@ export type Database = {
         }
         Relationships: []
       }
+      application_outcomes: {
+        Row: {
+          application_id: string
+          approved_amount: number | null
+          approved_apr: number | null
+          approved_term_months: number | null
+          client_id: string
+          created_at: string
+          created_by: string
+          denial_bureau: string | null
+          denial_reason: string | null
+          denial_score_model: string | null
+          evidence_document_id: string | null
+          outcome_date: string | null
+          outcome_source: string
+          reported_at: string
+          source_note: string | null
+          updated_at: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          application_id: string
+          approved_amount?: number | null
+          approved_apr?: number | null
+          approved_term_months?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string
+          denial_bureau?: string | null
+          denial_reason?: string | null
+          denial_score_model?: string | null
+          evidence_document_id?: string | null
+          outcome_date?: string | null
+          outcome_source?: string
+          reported_at?: string
+          source_note?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          approved_amount?: number | null
+          approved_apr?: number | null
+          approved_term_months?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          denial_bureau?: string | null
+          denial_reason?: string | null
+          denial_score_model?: string | null
+          evidence_document_id?: string | null
+          outcome_date?: string | null
+          outcome_source?: string
+          reported_at?: string
+          source_note?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_outcomes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_outcomes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_outcomes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_outcomes_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_outcomes_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           client_id: string
           created_at: string
+          goal_id: string | null
           id: string
           lender_label: string
+          match_result_id: string | null
           product_id: string | null
           status: string
           status_date: string
@@ -90,8 +194,10 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          goal_id?: string | null
           id?: string
           lender_label: string
+          match_result_id?: string | null
           product_id?: string | null
           status?: string
           status_date?: string
@@ -100,8 +206,10 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          goal_id?: string | null
           id?: string
           lender_label?: string
+          match_result_id?: string | null
           product_id?: string | null
           status?: string
           status_date?: string
@@ -113,6 +221,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "funding_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_match_result_id_fkey"
+            columns: ["match_result_id"]
+            isOneToOne: false
+            referencedRelation: "match_results"
             referencedColumns: ["id"]
           },
           {
@@ -990,6 +1112,13 @@ export type Database = {
       lender_products: {
         Row: {
           amount_kind: string
+          application_checklist: Json
+          application_guidance_source_url: string | null
+          application_guidance_verified_on: string | null
+          application_pull_risk: string | null
+          application_url: string | null
+          application_url_source_url: string | null
+          application_url_verified_on: string | null
           apr_as_of: string | null
           apr_source_url: string | null
           channel_scope: string | null
@@ -1006,7 +1135,10 @@ export type Database = {
           published_min_amount: number | null
           published_term_max_months: number | null
           published_term_min_months: number | null
+          pull_risk_source_url: string | null
+          pull_risk_verified_on: string | null
           pull_type: string
+          required_documents: Json
           research_status: string
           source_verified_on: string | null
           term_as_of: string | null
@@ -1014,6 +1146,13 @@ export type Database = {
         }
         Insert: {
           amount_kind?: string
+          application_checklist?: Json
+          application_guidance_source_url?: string | null
+          application_guidance_verified_on?: string | null
+          application_pull_risk?: string | null
+          application_url?: string | null
+          application_url_source_url?: string | null
+          application_url_verified_on?: string | null
           apr_as_of?: string | null
           apr_source_url?: string | null
           channel_scope?: string | null
@@ -1030,7 +1169,10 @@ export type Database = {
           published_min_amount?: number | null
           published_term_max_months?: number | null
           published_term_min_months?: number | null
+          pull_risk_source_url?: string | null
+          pull_risk_verified_on?: string | null
           pull_type?: string
+          required_documents?: Json
           research_status?: string
           source_verified_on?: string | null
           term_as_of?: string | null
@@ -1038,6 +1180,13 @@ export type Database = {
         }
         Update: {
           amount_kind?: string
+          application_checklist?: Json
+          application_guidance_source_url?: string | null
+          application_guidance_verified_on?: string | null
+          application_pull_risk?: string | null
+          application_url?: string | null
+          application_url_source_url?: string | null
+          application_url_verified_on?: string | null
           apr_as_of?: string | null
           apr_source_url?: string | null
           channel_scope?: string | null
@@ -1054,7 +1203,10 @@ export type Database = {
           published_min_amount?: number | null
           published_term_max_months?: number | null
           published_term_min_months?: number | null
+          pull_risk_source_url?: string | null
+          pull_risk_verified_on?: string | null
           pull_type?: string
+          required_documents?: Json
           research_status?: string
           source_verified_on?: string | null
           term_as_of?: string | null

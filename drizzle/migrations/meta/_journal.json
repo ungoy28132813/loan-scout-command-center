@@ -232,6 +232,20 @@
       "when": 1794886513005,
       "tag": "0032_strategy_approval_provenance_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794886862641,
+      "tag": "0033_guided_application_outcome_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794886886179,
+      "tag": "0034_sourced_application_guidance",
+      "breakpoints": true
     }
   ]
 }

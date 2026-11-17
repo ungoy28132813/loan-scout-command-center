@@ -27,6 +27,8 @@ function ProductFacts({ p }: { p: Product }) {
     {(p.published_apr_min != null || p.published_apr_max != null) && <div>Marketed APR (product-level, not an offer): {p.published_apr_min ?? "?"}% – {p.published_apr_max ?? "?"}%{p.apr_as_of ? ` · as of ${p.apr_as_of}` : ""}{p.apr_source_url && <> · <a className="underline" href={p.apr_source_url} target="_blank" rel="noreferrer">source</a></>}</div>}
     {(p.published_term_min_months != null || p.published_term_max_months != null) && <div>Marketed term: {p.published_term_min_months ?? "?"}–{p.published_term_max_months ?? "?"} months{p.term_as_of ? ` · as of ${p.term_as_of}` : ""}{p.term_source_url && <> · <a className="underline" href={p.term_source_url} target="_blank" rel="noreferrer">source</a></>}</div>}
     {p.source_verified_on && <div>Public source checked {p.source_verified_on}{researchIsStale(p.source_verified_on) && <span className="ml-1 font-medium">· stale; recheck before relying on it</span>}</div>}
+    {p.application_url && <div>Application destination verified {p.application_url_verified_on ?? "date Unknown"} · <a className="underline" href={p.application_url} target="_blank" rel="noreferrer">open lender application / rate check</a>{p.application_url_source_url && <> · <a className="underline" href={p.application_url_source_url} target="_blank" rel="noreferrer">source</a></>}</div>}
+    {p.application_pull_risk && <div>Pull risk: {p.application_pull_risk} {p.pull_risk_source_url && <a className="underline" href={p.pull_risk_source_url} target="_blank" rel="noreferrer">source</a>}</div>}
     {p.product_note && <div>{p.product_note}</div>}
   </div>;
 }

@@ -23,9 +23,11 @@
 - [x] Section 04 goal-scoped conditional answers, provenance, expanded deterministic rule coverage, joint safeguards
 - [x] Section 05 goal-scoped funding planner, payment/affordability math, and safe cross-product scenarios
 - [x] Section 05 approved draft-strategy workflow, utilization-rule preview, verification, and commit
+- [x] Section 06 guided applications, sourced checklists, staff-only outcome evidence, and real-record monthly metrics
+- [x] Section 06 rollback/browser acceptance, cleanup, queue documentation, and commit
 - [ ] Observed outcomes / learning (Phase 3; owner review required)
 - [ ] On-demand lender policy research (Phase 3; no scheduled monitoring)
 
 ## Build queue acceptance
-- [x] Sections 01–05 completed with documented acceptance and rollback/security checks
-- [ ] Sections 06–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
+- [x] Sections 01–06 completed with documented acceptance and rollback/security checks
+- [ ] Sections 07–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order

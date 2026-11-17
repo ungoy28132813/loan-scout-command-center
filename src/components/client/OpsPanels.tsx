@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Me } from "@/lib/use-me";
-import { APP_STATUSES, fmtDate } from "@/lib/labels";
+import { fmtDate } from "@/lib/labels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,21 +14,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 function useList<T>(key: string, clientId: string, table: string, order = "created_at") {
   return useQuery({ queryKey: [key, clientId], queryFn: async () => ((await supabase.from(table as never).select("*").eq("client_id", clientId).order(order, { ascending: false })).data ?? []) as T[] });
-}
-
-export function ApplicationsPanel({ clientId, me }: { clientId: string; me: Me }) {
-  const qc = useQueryClient(); const can = me.perms.can_update_applications;
-  const q = useList<{ id: string; lender_label: string; status: string; status_date: string }>("apps", clientId, "applications", "status_date");
-  const [label, setLabel] = useState("");
-  const refresh = () => qc.invalidateQueries({ queryKey: ["apps", clientId] });
-  const add = async () => { if (!label.trim()) return; const { error } = await supabase.from("applications").insert({ client_id: clientId, lender_label: label.slice(0, 120) }); if (error) toast.error(error.message); else { setLabel(""); refresh(); } };
-  const setStatus = async (id: string, status: string) => { const { error } = await supabase.from("applications").update({ status, status_date: new Date().toISOString(), updated_by: me.id }).eq("id", id); if (error) toast.error(error.message); else refresh(); };
-  return <Card><CardHeader><CardTitle className="label-caps">Application pipeline</CardTitle><p className="text-sm text-muted-foreground">Status changes update the client dashboard and audit log only — no notifications or tasks are triggered.</p></CardHeader>
-    <CardContent className="space-y-3">
-      {(q.data ?? []).map((a) => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-3 text-sm"><span className="font-medium">{a.lender_label}</span><span className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{fmtDate(a.status_date)}</span>
-        {can ? <Select value={a.status} onValueChange={(v) => setStatus(a.id, v)}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{APP_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select> : <StatusBadge value={a.status} />}</span></div>)}
-      {can && <div className="flex gap-2"><Input placeholder="Lender / product applied to" value={label} onChange={(e) => setLabel(e.target.value)} /><Button onClick={add}>Track application</Button></div>}
-    </CardContent></Card>;
 }
 
 export function ReadinessPanel({ clientId, me }: { clientId: string; me: Me }) {

@@ -9,7 +9,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 03 | Lender Catalog / Research | **completed** — official-source retrieval and owner review verified; AI interpretation remains pending |
 | 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
-| 06 | Guided Applications / Outcomes | queued |
+| 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
 | 07 | Client Publishing / Documents / Exports | queued |
 | 08 | Intelligence / Bureau Pulls / Analytics | queued |
 | 09 | Final QA / Readiness | queued |
@@ -180,3 +180,37 @@ Undisclosed lender calculations and unsupported joint variations intentionally r
 - Sequencing is editorial guidance, not an automated application schedule. No application is submitted and Q70 outcome handling remains undecided.
 - Utilization-linked rule preview has no lender-specific result while active documented rules are zero. It does not alter stored matches, reports, or published recommendations.
 - No client-visible published strategy was created or tested in this section; only the internal approved scenario and unpublished staff draft were exercised. Q73/Q87 remain undecided.
+
+## Section 06 — Guided application pipeline and outcome evidence
+
+**State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified. No external capability is blocked.
+
+### Implemented and verified
+
+- Preserved exactly five statuses: **Not Started, Submitted, Pending, Approved, Denied**. Only the owner or actively assigned employees with `can_update_applications` can create or edit tracking rows; clients retain read-only status/date views.
+- Added optional goal and original-recommendation links with same-client/product database guards. Actual outcomes never rewrite match results, suitability scores, review status, reports, or published recommendations.
+- Replaced the basic pipeline with guided staff application cards: official product source, verified application/rate-check destination, sourced preparation checklist, lender-stated document requirements, pull-risk wording, and explicit no-automatic-submission language.
+- Verified and seeded two real destinations: Wells Fargo’s `icomplete.wellsfargo.com` rate-check/getting-started flow and Prosper’s `/pl-offers/get-rate/step-1` flow. Wells Fargo includes three checklist items, five conditional document items, and official wording distinguishing no-impact option checks from a hard pull after application submission. Prosper includes three sourced steps and limited rate-check wording; no unsupported document list or later-pull claim was added.
+- Extended owner-reviewed product research with application URL, checklist, document, and pull-risk fields. Credential-free HTTPS and non-home-page destinations are required; official URLs remain on the lender’s domain, secondary sources remain notes, and no research action activates underwriting rules.
+- Added separate staff-only `application_outcomes` records with optional amount, APR, term, denial reason, bureau/model, evidence document, source note, and provenance. Q70 remains undecided: none of those detail fields is mandatory.
+- Client self-reports and staff observations remain unverified. `staff_verified` requires lender document/portal/direct-confirmation provenance plus a same-client evidence document or source note, and records verifier/time. Clients cannot read this staff-only outcome table.
+- Added current/previous-month metrics calculated only from actual non-demo application rows. Recorded counts and lender-evidence-verified counts are separate; self-reports, demo rows, match recommendations, and unsupported statuses never become verified outcome metrics.
+- Status and outcome edits are audited with changed field names, not outcome values. No status/outcome trigger creates announcements, email, SMS, reminders, readiness tasks, or other follow-up tasks.
+
+### Acceptance results — 2026-11-17
+
+- **115/115 application tests passed across 14 files**, including exact status labels, demo/other-month/invalid-status exclusion, self-report versus verified metrics, application URL provenance, home-page/HTTP rejection, guidance parsing, and all previous suites.
+- **31/31 transaction-rollback Section 06 database checks passed**: exact statuses, same-client links/evidence, optional Q70 fields, self-report verification rejection, lender-evidence verification, recommendation immutability, silent status changes, audits, client read-only boundaries, employee permission/assignment enforcement, real guidance seeds, home-page/cross-host rejection, owner review, secondary-note isolation, and zero rule activation.
+- The existing **23/23 product-research regression checks also passed** after extending the research functions.
+- TypeScript check and production build passed. Basic security scan found no issues; this is not deep code analysis or production certification.
+- Synthetic owner Chromium workflow passed with zero console errors: DEMO client and personal goal → Wells Fargo tracking row → verified destination/checklist/documents/pull risk → Submitted → unverified client self-report → lender-document verification with no amount/APR/term → Approved. The external application link was inspected but not opened or submitted.
+- Settled UI readback showed **Approved** and **lender evidence verified**. Database readback showed null optional amount/APR/term, zero announcements, and zero readiness tasks. Command Center monthly metrics showed zero for the synthetic DEMO row.
+- Cleanup/readback found **0 clients, 0 applications, 0 outcomes, 0 product-research rows, 0 active rules, 0 published snapshots, 13 pending source criteria, and 2 guided products**. No real client data, report, file, credential, or lender application was used.
+
+### Documented limits and deferred work
+
+- Only Wells Fargo Personal Loan and Prosper Personal Loan currently have verified application destinations. Other products show an honest empty state until official guidance is submitted and owner-reviewed; a lender home page is never substituted.
+- Prosper’s sourced document list and later application pull impact remain Unknown rather than inferred. Wells Fargo document items are conditional “if requested,” not mandatory for every applicant.
+- Monthly metrics are operational counts, not approval probabilities or lender-performance learning. Observed-outcome learning remains Phase 3 and subject to owner review; Q70 detailed outcome design remains undecided.
+- A separate live client-browser session was not used in this section. Client read-only status/date access and denial of outcome-table reads/writes were exercised by rollback database tests; the owner browser workflow was exercised end to end.
+- No automated submission, bureau pull, email/SMS, dashboard notification, reminder, follow-up task, recommendation publication, or public deployment was added. Q73/Q87 remain undecided.
