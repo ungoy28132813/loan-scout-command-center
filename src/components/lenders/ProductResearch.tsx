@@ -19,13 +19,14 @@ type Product = Tables<"lender_products">;
 type FormState = {
   url: string; title: string; tier: string; excerpt: string; locator: string; scope: string;
   version: string; effective: string; checked: string; min: string; max: string;
-  aprMin: string; aprMax: string; aprAsOf: string; note: string; amountKind: string;
+  aprMin: string; aprMax: string; aprAsOf: string; termMin: string; termMax: string; termAsOf: string; note: string; amountKind: string;
 };
 
 const CHANGE_LABELS: Record<string, string> = {
   official_url: "Official URL", published_min_amount: "Minimum amount", published_max_amount: "Maximum amount",
   published_apr_min: "Minimum marketed APR", published_apr_max: "Maximum marketed APR", product_note: "Product note",
   channel_scope: "Channel scope", amount_kind: "Amount kind", apr_as_of: "APR as-of date",
+  published_term_min_months: "Minimum term (months)", published_term_max_months: "Maximum term (months)", term_as_of: "Term as-of date",
 };
 
 function initialForm(product: Product): FormState {
@@ -33,7 +34,7 @@ function initialForm(product: Product): FormState {
     url: product.official_url ?? "", title: `${product.name} — official source`, tier: "official_primary",
     excerpt: "", locator: "", scope: product.channel_scope ?? product.product_type.replace(/_/g, " "),
     version: "", effective: "", checked: "", min: "", max: "", aprMin: "", aprMax: "", aprAsOf: "",
-    note: "", amountKind: "no_change",
+    termMin: "", termMax: "", termAsOf: "", note: "", amountKind: "no_change",
   };
 }
 
@@ -103,6 +104,9 @@ export function ProductResearchPanel({ product, items, isOwner, canPropose, onDo
     if (form.aprMin) proposed["published_apr_min"] = Number(form.aprMin);
     if (form.aprMax) proposed["published_apr_max"] = Number(form.aprMax);
     if ((form.aprMin || form.aprMax) && form.aprAsOf) proposed["apr_as_of"] = form.aprAsOf;
+    if (form.termMin) proposed["published_term_min_months"] = Number(form.termMin);
+    if (form.termMax) proposed["published_term_max_months"] = Number(form.termMax);
+    if ((form.termMin || form.termMax) && form.termAsOf) proposed["term_as_of"] = form.termAsOf;
     if (form.note.trim()) proposed["product_note"] = form.note.trim();
     if (form.scope.trim() !== (product.channel_scope ?? "")) proposed["channel_scope"] = form.scope.trim();
     if (form.amountKind !== "no_change") proposed["amount_kind"] = form.amountKind;
@@ -126,7 +130,7 @@ export function ProductResearchPanel({ product, items, isOwner, canPropose, onDo
       {form.tier === "official_primary" && <Button size="sm" variant="secondary" disabled={busy || !form.url} onClick={retrieve}>Retrieve public page text now</Button>}
       <div className="grid gap-2 sm:grid-cols-2"><Input aria-label="Source title" placeholder="Exact page or document title" value={form.title} onChange={(e) => set({ title: e.target.value })} /><Input aria-label="Channel scope" placeholder="Product/channel scope" value={form.scope} onChange={(e) => set({ scope: e.target.value })} /><Input aria-label="Source version" placeholder="Version (optional)" value={form.version} onChange={(e) => set({ version: e.target.value })} /><Input aria-label="Source locator" placeholder="Page / section (optional)" value={form.locator} onChange={(e) => set({ locator: e.target.value })} /><label className="text-xs">Checked on<Input required type="date" value={form.checked} onChange={(e) => set({ checked: e.target.value })} /></label><label className="text-xs">Effective date (optional)<Input type="date" value={form.effective} onChange={(e) => set({ effective: e.target.value })} /></label></div>
       <Textarea aria-label="Source excerpt" className="min-h-32 bg-card" maxLength={12000} placeholder="Paste a short relevant public excerpt, or retrieve it above. Do not paste client data." value={form.excerpt} onChange={(e) => set({ excerpt: e.target.value })} />
-      <div><div className="label-caps mb-2 text-muted-foreground">Proposed marketing updates · blank = no change</div><div className="grid gap-2 sm:grid-cols-3"><Input type="number" min="0" aria-label="Proposed minimum amount" placeholder="Min amount" value={form.min} onChange={(e) => set({ min: e.target.value })} /><Input type="number" min="0" aria-label="Proposed maximum amount" placeholder="Max amount" value={form.max} onChange={(e) => set({ max: e.target.value })} /><Select value={form.amountKind} onValueChange={(amountKind) => set({ amountKind })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="no_change">Amount kind unchanged</SelectItem><SelectItem value="loan_cash">Loan cash</SelectItem><SelectItem value="credit_limit">Credit limit</SelectItem><SelectItem value="available_credit">Available card credit</SelectItem><SelectItem value="unknown">Unknown</SelectItem></SelectContent></Select><Input type="number" min="0" max="100" step="0.01" aria-label="Proposed minimum APR" placeholder="Min APR %" value={form.aprMin} onChange={(e) => set({ aprMin: e.target.value })} /><Input type="number" min="0" max="100" step="0.01" aria-label="Proposed maximum APR" placeholder="Max APR %" value={form.aprMax} onChange={(e) => set({ aprMax: e.target.value })} /><label className="text-xs">APR as of<Input type="date" value={form.aprAsOf} onChange={(e) => set({ aprAsOf: e.target.value })} /></label></div><Textarea aria-label="Proposed product note" className="mt-2 bg-card" placeholder="Product note / introductory-rate distinction (optional)" value={form.note} onChange={(e) => set({ note: e.target.value })} /></div>
+      <div><div className="label-caps mb-2 text-muted-foreground">Proposed marketing updates · blank = no change</div><div className="grid gap-2 sm:grid-cols-3"><Input type="number" min="0" aria-label="Proposed minimum amount" placeholder="Min amount" value={form.min} onChange={(e) => set({ min: e.target.value })} /><Input type="number" min="0" aria-label="Proposed maximum amount" placeholder="Max amount" value={form.max} onChange={(e) => set({ max: e.target.value })} /><Select value={form.amountKind} onValueChange={(amountKind) => set({ amountKind })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="no_change">Amount kind unchanged</SelectItem><SelectItem value="loan_cash">Loan cash</SelectItem><SelectItem value="credit_limit">Credit limit</SelectItem><SelectItem value="available_credit">Available card credit</SelectItem><SelectItem value="unknown">Unknown</SelectItem></SelectContent></Select><Input type="number" min="0" max="100" step="0.01" aria-label="Proposed minimum APR" placeholder="Min APR %" value={form.aprMin} onChange={(e) => set({ aprMin: e.target.value })} /><Input type="number" min="0" max="100" step="0.01" aria-label="Proposed maximum APR" placeholder="Max APR %" value={form.aprMax} onChange={(e) => set({ aprMax: e.target.value })} /><label className="text-xs">APR as of<Input type="date" value={form.aprAsOf} onChange={(e) => set({ aprAsOf: e.target.value })} /></label><Input type="number" min="1" max="1200" step="1" aria-label="Proposed minimum term months" placeholder="Min term months" value={form.termMin} onChange={(e) => set({ termMin: e.target.value })} /><Input type="number" min="1" max="1200" step="1" aria-label="Proposed maximum term months" placeholder="Max term months" value={form.termMax} onChange={(e) => set({ termMax: e.target.value })} /><label className="text-xs">Term as of<Input type="date" value={form.termAsOf} onChange={(e) => set({ termAsOf: e.target.value })} /></label></div><Textarea aria-label="Proposed product note" className="mt-2 bg-card" placeholder="Product note / introductory-rate distinction (optional)" value={form.note} onChange={(e) => set({ note: e.target.value })} /></div>
       <div className="flex gap-2"><Button size="sm" disabled={busy} onClick={submit}>Submit for owner review</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
     </div>}
     {items.length > 0 && <div className="mt-3 space-y-2">{items.map((item) => <ProductResearchRow key={item.id} item={item} isOwner={isOwner} onDone={onDone} />)}</div>}

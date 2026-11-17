@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUtilizationAccounts, clampPaydown, compareSnapshots, simulateUtilization, type AnalysisField, type AnalysisReport, type AnalysisTradeline } from "./credit-analysis";
+import { buildUtilizationAccounts, bureauUtilizationScenario, clampPaydown, compareSnapshots, simulateUtilization, type AnalysisField, type AnalysisReport, type AnalysisTradeline } from "./credit-analysis";
 
 const reports: AnalysisReport[] = [
   { id: "old", report_date: "2026-09-01", created_at: "2026-09-02T00:00:00Z", extraction_status: "verified", file_name: "old.pdf" },
@@ -83,5 +83,17 @@ describe("revolving utilization and paydown simulator", () => {
     const accounts = buildUtilizationAccounts("new", [account("new", "experian", "OVER LIMIT", "9999", 1200, 1000)]);
     const result = simulateUtilization(accounts, { [accounts[0]!.key]: { selected: true, paydown: 200 } });
     expect(result.combined).toMatchObject({ currentUtilization: 120, proposedUtilization: 100, differencePoints: 20 });
+  });
+
+  it("provides bureau-specific hypothetical inputs without double-counting another bureau", () => {
+    const accounts = buildUtilizationAccounts("new", [account("new", "experian", "DEMO CARD", "4444", 500, 1000), account("new", "equifax", "DEMO CARD", "4444", 500, 1000)]);
+    const inputs = { [accounts[0]!.key]: { selected: true, paydown: 100 } };
+    expect(bureauUtilizationScenario(accounts, inputs, "experian")).toMatchObject({ accountCount: 1, currentBalance: 500, proposedBalance: 400, currentLimit: 1000, proposedUtilization: 40 });
+    expect(bureauUtilizationScenario(accounts, inputs, "transunion")).toBeNull();
+  });
+
+  it("keeps ambiguous groups out of bureau-specific rule previews", () => {
+    const accounts = buildUtilizationAccounts("new", [account("new", "experian", "DEMO CONFLICT", "5555", 500, 1000), account("new", "equifax", "DEMO CONFLICT", "5555", 600, 1000)]);
+    expect(bureauUtilizationScenario(accounts, { [accounts[0]!.key]: { selected: true, paydown: 100 } }, "experian")).toBeNull();
   });
 });

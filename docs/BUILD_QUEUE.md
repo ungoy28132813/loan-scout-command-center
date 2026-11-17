@@ -8,7 +8,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 02 | Credit PDF / OCR | **completed** — local English OCR and verified-analysis scope verified; documented scan/layout limits below |
 | 03 | Lender Catalog / Research | **completed** — official-source retrieval and owner review verified; AI interpretation remains pending |
 | 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
-| 05 | Funding Planning / Simulators | queued |
+| 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | queued |
 | 07 | Client Publishing / Documents / Exports | queued |
 | 08 | Intelligence / Bureau Pulls / Analytics | queued |
@@ -147,3 +147,36 @@ Lender research, further underwriting inputs, simulators, guided applications/ou
 ### Documented limits
 
 Undisclosed lender calculations and unsupported joint variations intentionally remain Needs Review rather than inferred rules. Existing candidate thresholds, representability, review status, and sources were not changed; no owner approval or rule activation occurred. No external capability is blocked for this section.
+
+## Section 05 — Funding strategy planner and scenario simulations
+
+**State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified. No external capability is blocked.
+
+### Implemented and verified
+
+- Added a staff-only, exact goal-scoped funding planner for personal goals and each separately selected business. Existing goal/business facts remain isolated; no client-global or other-business revenue, expenses, debt, or cash flow is substituted.
+- Added staff-entered conservative, medium, and expanded hypothetical request amounts. These are explicitly labeled assumptions, not applicant-specific lender estimates, approvals, expected offers, or cash guarantees.
+- Added product-marketing amount comparison and amortizing payment ranges only when owner-reviewed APR and term values and their official sources exist. Unknown APR, term, sources, or comparable inputs remain Unknown. Undocumented fees and exact rate/term availability are not inferred.
+- Added separate hypothetical loan-cash and revolving-limit totals. Card limits and available credit are never added to cash. Personal DTI and business remaining-cash-flow arithmetic appear only with documented comparable inputs; no affordability or approval threshold is invented.
+- Added product reordering, exclusion/inclusion, per-item assumptions, affordability notes, source-linked eligibility explanations, and editorial sequencing notes. Unknown pull type, membership, or product-age requirements remain uncertain.
+- Added immutable approved scenarios with staff-only RLS, approval provenance, audit field names, archive support, and exact client/goal binding. Clients have no direct scenario-table access.
+- Added separate employee-controlled creation of an unpublished recommendation draft from an approved scenario. Existing manual publication, active-assignment, and immutable-published-snapshot safeguards remain unchanged; scenario approval never publishes or runs matching.
+- Added internal hypothetical per-bureau utilization/paydown preview against active documented `max_utilization` rules only, with bureau/model mismatch, missing evidence, ambiguous tradelines, and inactive rules excluded. No FICO/score prediction or automatic recommendation update.
+- Extended owner-reviewed product-term research with source URL/date validation. Secondary sources remain notes and cannot apply marketing terms or activate rules.
+
+### Acceptance results — 2026-11-17
+
+- **110/110 application tests passed across 13 files**, including synthetic payment math, unknown APR/term/source handling, revolving-limits-not-cash, personal DTI, Business A versus Business B cash-flow isolation, unknown inputs, and sequencing uncertainty. Existing parser, matching, goal, business, catalog, and routing suites remain green.
+- **17/17 transaction-rollback funding-strategy database checks passed**: client denial, staff/owner approval, goal binding, approved immutability, archive provenance, snapshot-draft separation, source-scenario deletion safety, grants, and audit coverage.
+- **5/5 transaction-rollback documented-term research checks passed**, including official owner review, missing-source rejection, secondary-note isolation, and no rule activation. The existing **23/23 product-research regression checks also passed**.
+- TypeScript check and production build passed. Basic security scan found no issues; this is not a deep security certification.
+- Synthetic owner browser workflow passed: personal goal → scoped Prosper product → three request tiers → Unknown payment with undocumented term → saved draft → item approval → complete strategy approval → unpublished draft v1. The separate **Publish now** button remained visible and was not used; final resumed-page console errors were zero.
+- Cleanup/readback: **0 clients, 0 scenarios, 0 snapshots, 0 match runs, 0 product-research rows, 0 products with documented terms, 0 active rules, and 13 original pending source criteria**. No real report, client data, or external client disclosure was used.
+
+### Documented limits and deferred work
+
+- No documented product terms are currently approved, so live payment calculations correctly remain Unknown until the owner reviews sourced terms. Existing marketed APRs are not treated as guaranteed pricing.
+- Conservative/medium/expanded values require staff assumptions; the system does not fabricate applicant-specific funding ranges.
+- Sequencing is editorial guidance, not an automated application schedule. No application is submitted and Q70 outcome handling remains undecided.
+- Utilization-linked rule preview has no lender-specific result while active documented rules are zero. It does not alter stored matches, reports, or published recommendations.
+- No client-visible published strategy was created or tested in this section; only the internal approved scenario and unpublished staff draft were exercised. Q73/Q87 remain undecided.

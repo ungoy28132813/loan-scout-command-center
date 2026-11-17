@@ -44,6 +44,7 @@ export function businessCoreAnswers(profile: BusinessFinancialProfile, asOf = ne
     months_in_business: monthsOperating(profile, asOf),
     monthly_business_expenses: profile.monthly_expenses,
     monthly_business_revenue: profile.monthly_revenue,
+    monthly_net_cash_flow: profile.monthly_net_cash_flow,
     monthly_business_debt_payments: profile.existing_monthly_debt_payments,
     average_monthly_deposits: profile.average_monthly_deposits,
     banking_history_months: profile.banking_history_months,
@@ -60,7 +61,7 @@ export function scopedGoalAnswers(input: {
   asOf?: Date;
 }): Record<string, number | null> {
   if (input.goalType === "personal") {
-    const businessKeys = new Set(["annual_business_revenue", "months_in_business", "monthly_business_expenses", "monthly_business_revenue", "monthly_business_debt_payments", "average_monthly_deposits", "banking_history_months", "owner_share_pct", "business_cash_on_hand", "business_collateral_value"]);
+    const businessKeys = new Set(["annual_business_revenue", "months_in_business", "monthly_business_expenses", "monthly_business_revenue", "monthly_net_cash_flow", "monthly_business_debt_payments", "average_monthly_deposits", "banking_history_months", "owner_share_pct", "business_cash_on_hand", "business_collateral_value"]);
     return Object.fromEntries(Object.entries(input.personalAnswers).filter(([key]) => !businessKeys.has(key)));
   }
   if (!input.business) return {};

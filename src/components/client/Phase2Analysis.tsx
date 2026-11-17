@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { GitCompareArrows, Calculator, AlertTriangle } from "lucide-react";
-import { compareSnapshots, buildUtilizationAccounts, simulateUtilization, clampPaydown, type AnalysisField, type AnalysisReport, type AnalysisTradeline, type NumericChange, type ScenarioInput } from "@/lib/credit-analysis";
+import { supabase } from "@/integrations/supabase/client";
+import { evaluateRule, type Facts, type Rule } from "@/lib/match-engine";
+import { compareSnapshots, buildUtilizationAccounts, simulateUtilization, bureauUtilizationScenario, clampPaydown, type AnalysisField, type AnalysisReport, type AnalysisTradeline, type NumericChange, type ScenarioInput, type UtilizationAccount } from "@/lib/credit-analysis";
 import { fmtDate, fmtMoney } from "@/lib/labels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const FIELD_LABELS: Record<string, string> = { inquiries_6mo: "Hard inquiries (6 mo)", inquiries_12mo: "Hard inquiries (12 mo)", late_payments_24mo: "Late payments (24 mo)", collections_count: "Collections", open_tradelines: "Open tradelines" };
 const num = (v: number | null) => v == null ? "Unknown" : String(v);
@@ -86,6 +90,7 @@ export function UtilizationSimulator({ report, tradelines, activeRuleCount }: { 
     setInputs(Object.fromEntries(accounts.filter((a) => a.combinedEligible).map((a) => [a.key, { selected: true, paydown: 0 }])));
   }, [report.id, accounts]);
   const scenario = useMemo(() => simulateUtilization(accounts, inputs), [accounts, inputs]);
+  const utilizationRules = useQuery({ queryKey: ["active-utilization-rules"], queryFn: async () => (await supabase.from("lender_rules").select("*").eq("approval_status", "active").eq("rule_key", "max_utilization_pct")).data ?? [] });
   const resultFor = (key: string) => scenario.accounts.find((a) => a.key === key);
   const setInput = (key: string, patch: Partial<ScenarioInput>) => setInputs((current) => ({ ...current, [key]: { selected: false, paydown: 0, ...current[key], ...patch } }));
 
@@ -94,7 +99,7 @@ export function UtilizationSimulator({ report, tradelines, activeRuleCount }: { 
     <CardContent className="space-y-4 text-sm">
       <Alert><AlertDescription><b>Hypothetical, not a credit score prediction.</b> This is arithmetic on the selected snapshot ({report.report_date ?? `uploaded ${fmtDate(report.created_at)}`}), not a funding approval or promised score effect. Nothing is saved; original reports and lender match records are unchanged.</AlertDescription></Alert>
       <p className="text-xs text-muted-foreground">Combined totals include only selected accounts with confirmed matching balances and limits across bureaus. Unverified, missing-limit, duplicate, or conflicting entries remain informational and are excluded. Balances may be out of date after the report date.</p>
-      {activeRuleCount === 0 ? <p className="rounded border border-gold p-2">No lender-specific simulation available yet. Utilization math remains available without approved lender rules.</p> : <p className="rounded border p-2 text-muted-foreground">No lender result is generated from hypothetical balances. Owner-approved criteria can be re-run only after verified report facts change; this scenario never publishes or rewrites match records.</p>}
+      <UtilizationRulePreview accounts={accounts} inputs={inputs} rules={utilizationRules.data as unknown as Rule[] | undefined} loading={utilizationRules.isLoading} activeRuleCount={activeRuleCount} />
       {accounts.length === 0 ? <p className="rounded border border-dashed p-4 text-muted-foreground">No revolving account entries are available in this snapshot.</p> : <>
         <div className="grid gap-3 rounded bg-muted p-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Combined current" value={scenario.combined ? `${scenario.combined.currentUtilization}%` : "Unknown"} />
@@ -127,6 +132,26 @@ export function UtilizationSimulator({ report, tradelines, activeRuleCount }: { 
       </>}
     </CardContent>
   </Card>;
+}
+
+function UtilizationRulePreview({ accounts, inputs, rules, loading, activeRuleCount }: { accounts: UtilizationAccount[]; inputs: Record<string, ScenarioInput>; rules: Rule[] | undefined; loading: boolean; activeRuleCount: number }) {
+  if (loading) return <p className="text-xs text-muted-foreground">Checking for owner-approved utilization criteria…</p>;
+  if (!rules?.length) return <p className="rounded border border-gold p-2">No lender-specific simulation available yet. Utilization math remains available without approved lender rules{activeRuleCount > 0 ? "; other active rule types do not apply to this preview" : ""}.</p>;
+  return <section className="space-y-2 rounded border p-3">
+    <div><h3 className="label-caps text-muted-foreground">Internal hypothetical preview · owner-approved utilization criteria</h3><p className="mt-1 text-xs text-muted-foreground">Only confirmed, eligible bureau-specific accounts feed this arithmetic. No FICO or other score change is predicted, no actual match record changes, and nothing publishes.</p></div>
+    {rules.map((rule) => {
+      const bureau = rule.bureau ?? "unknown";
+      const current = bureauUtilizationScenario(accounts, inputs, bureau);
+      const factsFor = (value: number): Facts => ({ scores: [], bureau: { [bureau]: { utilization_pct: value } } as Facts["bureau"], answers: {}, answerTexts: {}, answerMeta: {}, applicationMode: "unknown", criticalWarnings: [] });
+      const currentCondition = current ? evaluateRule(rule, factsFor(current.currentUtilization)) : null;
+      const proposedCondition = current ? evaluateRule(rule, factsFor(current.proposedUtilization)) : null;
+      return <div key={rule.id} className="rounded bg-muted/40 p-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2"><b>{rule.source_title} · {bureau}</b><span className="flex items-center gap-1">{currentCondition && <StatusBadge value={currentCondition.outcome} label={`Current ${currentCondition.outcome}`} />}{proposedCondition && <StatusBadge value={proposedCondition.outcome} label={`Hypothetical ${proposedCondition.outcome}`} />}</span></div>
+        {current ? <div className="mt-2">Current {current.currentUtilization}% → hypothetical {current.proposedUtilization}% · required {proposedCondition?.required} · paydown {money(current.totalPaydown)} · {current.accountCount} confirmed account(s) · source page(s) {current.sourcePages.join(", ") || "Unknown"}</div> : <div className="mt-2">Unknown — no eligible confirmed {bureau} accounts are selected for this scenario.</div>}
+        <div className="mt-1 text-muted-foreground">Source: <a className="underline" href={rule.source_url} target="_blank" rel="noreferrer">{rule.source_title}</a> · verified {rule.verified_on} · {proposedCondition?.explanation ?? "No rule evaluation without comparable accounts."}</div>
+      </div>;
+    })}
+  </section>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

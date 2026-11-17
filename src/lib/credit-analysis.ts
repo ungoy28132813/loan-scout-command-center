@@ -249,3 +249,38 @@ export function simulateUtilization(accounts: UtilizationAccount[], inputs: Reco
     warnings,
   };
 }
+
+export interface BureauUtilizationScenario {
+  bureau: string;
+  accountCount: number;
+  currentBalance: number;
+  proposedBalance: number;
+  currentLimit: number;
+  currentUtilization: number;
+  proposedUtilization: number;
+  totalPaydown: number;
+  sourcePages: number[];
+}
+
+/** Bureau-specific hypothetical inputs for owner-approved utilization rules; ambiguous/unverified groups stay excluded. */
+export function bureauUtilizationScenario(accounts: UtilizationAccount[], inputs: Record<string, ScenarioInput>, bureau: string): BureauUtilizationScenario | null {
+  const scenario = simulateUtilization(accounts, inputs);
+  let currentBalance = 0, proposedBalance = 0, currentLimit = 0, totalPaydown = 0, accountCount = 0;
+  const sourcePages = new Set<number>();
+  for (const result of scenario.accounts) {
+    const account = accounts.find((candidate) => candidate.key === result.key);
+    const member = account?.members.find((candidate) => candidate.bureau === bureau);
+    const proposed = result.members.find((candidate) => candidate.id === member?.id);
+    if (!account?.combinedEligible || !member || !proposed || member.balance == null || member.limit == null || member.limit <= 0) continue;
+    currentBalance += member.balance;
+    proposedBalance += proposed.proposedBalance;
+    currentLimit += member.limit;
+    totalPaydown += result.appliedPaydown;
+    accountCount++;
+    if (member.sourcePage != null) sourcePages.add(member.sourcePage);
+  }
+  const currentUtilization = utilization(currentBalance, currentLimit);
+  const proposedUtilization = utilization(proposedBalance, currentLimit);
+  if (!accountCount || currentUtilization == null || proposedUtilization == null) return null;
+  return { bureau, accountCount, currentBalance: round(currentBalance), proposedBalance: round(proposedBalance), currentLimit: round(currentLimit), currentUtilization, proposedUtilization, totalPaydown: round(totalPaydown), sourcePages: [...sourcePages].sort((a, b) => a - b) };
+}

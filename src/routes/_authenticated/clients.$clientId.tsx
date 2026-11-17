@@ -16,6 +16,7 @@ import { ReportsPanel } from "@/components/client/ReportsPanel";
 import { GoalsPanel } from "@/components/client/GoalsPanel";
 import { QuestionnairePanel } from "@/components/client/QuestionnairePanel";
 import { MatchingPanel } from "@/components/client/MatchingPanel";
+import { FundingPlannerPanel } from "@/components/client/FundingPlannerPanel";
 import { ApplicationsPanel, ReadinessPanel, AnnouncementsPanel, NotesPanel } from "@/components/client/OpsPanels";
 
 export const Route = createFileRoute("/_authenticated/clients/$clientId")({
@@ -45,11 +46,12 @@ function ClientFile() {
       {me.primary === "owner" && <Assignment clientId={clientId} />}
       <Tabs defaultValue="docs">
         <TabsList className="mb-4 flex h-auto flex-wrap">
-          {([["docs", "Documents"], ["reports", "Credit analysis"], ["goals", "Goals & questions"], ["match", "Matches & publishing"], ["apps", "Applications"], ["ready", "Readiness"], ["ann", "Announcements"], ["notes", "Internal notes"]] as [string, string][]).map(([v, l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}
+          {([["docs", "Documents"], ["reports", "Credit analysis"], ["goals", "Goals & questions"], ["planner", "Funding planner"], ["match", "Matches & publishing"], ["apps", "Applications"], ["ready", "Readiness"], ["ann", "Announcements"], ["notes", "Internal notes"]] as [string, string][]).map(([v, l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}
         </TabsList>
         <TabsContent value="docs"><DocumentsPanel clientId={clientId} me={me} canUpload={me.perms.can_upload_docs} /></TabsContent>
         <TabsContent value="reports"><ReportsPanel clientId={clientId} me={me} activeRuleCount={q.data.ruleKeys.length} onChanged={() => qc.invalidateQueries({ queryKey: ["matching", clientId] })} /></TabsContent>
         <TabsContent value="goals"><div className="space-y-4"><GoalsPanel clientId={clientId} staff /><QuestionnairePanel clientId={clientId} ruleKeys={q.data.ruleKeys} staff /></div></TabsContent>
+        <TabsContent value="planner"><FundingPlannerPanel clientId={clientId} me={me} /></TabsContent>
         <TabsContent value="match"><MatchingPanel clientId={clientId} me={me} /></TabsContent>
         <TabsContent value="apps"><ApplicationsPanel clientId={clientId} me={me} /></TabsContent>
         <TabsContent value="ready"><ReadinessPanel clientId={clientId} me={me} /></TabsContent>

@@ -211,6 +211,27 @@
       "when": 1794886091495,
       "tag": "0029_goal_question_definition_access",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794886323380,
+      "tag": "0030_funding_strategy_scenarios",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794886343511,
+      "tag": "0031_documented_product_term_research",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794886513005,
+      "tag": "0032_strategy_approval_provenance_guards",
+      "breakpoints": true
     }
   ]
 }

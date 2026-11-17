@@ -21,10 +21,11 @@
 - [x] Section 02 browser-local OCR and expanded verified report analysis
 - [x] Section 03 expanded official-source product catalog and on-demand research/review
 - [x] Section 04 goal-scoped conditional answers, provenance, expanded deterministic rule coverage, joint safeguards
-- [ ] Business financial modeling / cross-product funding scenarios
+- [x] Section 05 goal-scoped funding planner, payment/affordability math, and safe cross-product scenarios
+- [x] Section 05 approved draft-strategy workflow, utilization-rule preview, verification, and commit
 - [ ] Observed outcomes / learning (Phase 3; owner review required)
 - [ ] On-demand lender policy research (Phase 3; no scheduled monitoring)
 
 ## Build queue acceptance
-- [x] Sections 01–04 completed with documented acceptance and rollback/security checks
-- [ ] Sections 05–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
+- [x] Sections 01–05 completed with documented acceptance and rollback/security checks
+- [ ] Sections 06–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order

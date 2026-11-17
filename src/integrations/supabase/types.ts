@@ -787,6 +787,72 @@ export type Database = {
           },
         ]
       }
+      funding_strategy_scenarios: {
+        Row: {
+          affordability_notes: string
+          approved_at: string | null
+          approved_by: string | null
+          assumptions: string
+          client_id: string
+          created_at: string
+          created_by: string
+          goal_id: string
+          id: string
+          items: Json
+          name: string
+          sequencing_notes: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affordability_notes?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: string
+          client_id: string
+          created_at?: string
+          created_by?: string
+          goal_id: string
+          id?: string
+          items?: Json
+          name: string
+          sequencing_notes?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affordability_notes?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          goal_id?: string
+          id?: string
+          items?: Json
+          name?: string
+          sequencing_notes?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_strategy_scenarios_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_strategy_scenarios_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "funding_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goal_questionnaire_answers: {
         Row: {
           answered_by: string | null
@@ -938,9 +1004,13 @@ export type Database = {
           published_apr_min: number | null
           published_max_amount: number | null
           published_min_amount: number | null
+          published_term_max_months: number | null
+          published_term_min_months: number | null
           pull_type: string
           research_status: string
           source_verified_on: string | null
+          term_as_of: string | null
+          term_source_url: string | null
         }
         Insert: {
           amount_kind?: string
@@ -958,9 +1028,13 @@ export type Database = {
           published_apr_min?: number | null
           published_max_amount?: number | null
           published_min_amount?: number | null
+          published_term_max_months?: number | null
+          published_term_min_months?: number | null
           pull_type?: string
           research_status?: string
           source_verified_on?: string | null
+          term_as_of?: string | null
+          term_source_url?: string | null
         }
         Update: {
           amount_kind?: string
@@ -978,9 +1052,13 @@ export type Database = {
           published_apr_min?: number | null
           published_max_amount?: number | null
           published_min_amount?: number | null
+          published_term_max_months?: number | null
+          published_term_min_months?: number | null
           pull_type?: string
           research_status?: string
           source_verified_on?: string | null
+          term_as_of?: string | null
+          term_source_url?: string | null
         }
         Relationships: [
           {
@@ -1367,6 +1445,7 @@ export type Database = {
           published_by: string | null
           scheduled_for: string | null
           scope: string
+          source_scenario_id: string | null
           status: string
           version: number
         }
@@ -1381,6 +1460,7 @@ export type Database = {
           published_by?: string | null
           scheduled_for?: string | null
           scope?: string
+          source_scenario_id?: string | null
           status?: string
           version: number
         }
@@ -1395,6 +1475,7 @@ export type Database = {
           published_by?: string | null
           scheduled_for?: string | null
           scope?: string
+          source_scenario_id?: string | null
           status?: string
           version?: number
         }
@@ -1404,6 +1485,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_snapshots_source_scenario_id_fkey"
+            columns: ["source_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "funding_strategy_scenarios"
             referencedColumns: ["id"]
           },
         ]
@@ -1929,6 +2017,10 @@ export type Database = {
           _tradeline_id: string
         }
         Returns: undefined
+      }
+      create_strategy_snapshot_draft: {
+        Args: { _scenario_id: string }
+        Returns: string
       }
       deactivate_employee: {
         Args: { _employee_id: string; _transfer_to?: string }

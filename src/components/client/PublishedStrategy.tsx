@@ -9,8 +9,11 @@ export interface SnapshotItem {
   status: string; score: number | null; sequence: number;
   conditions: { label: string; outcome: string; required: string; observed: string; source_title: string; source_url: string }[];
   checklist: string[]; documents: string[]; client_summary: string;
+  scenario_amounts?: { conservative: number | null; medium: number | null; expanded: number | null };
+  payment_scenarios?: Record<string, { low: number | null; high: number | null; reason: string }>;
+  planner_note?: string;
 }
-export interface SnapshotContent { items: SnapshotItem[]; disclaimer: string; approved_note?: string }
+export interface SnapshotContent { items: SnapshotItem[]; disclaimer: string; approved_note?: string; goal?: string; planner?: { affordability_notes: string; sequencing_notes: string } }
 
 export const DISCLAIMER = "These are informational recommendations prepared and reviewed by Loan Scout LLC staff. The suitability index (0–100) compares how closely your documented profile matches each product's cited, published requirements — it is not an approval probability. Lenders make all credit decisions. No approval, rate, credit limit or funding amount is guaranteed. A credit limit is not cash funding. Information marked Unknown was not available or not verified.";
 
@@ -44,6 +47,7 @@ export function PublishedStrategy({ content }: { content: SnapshotContent }) {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             {i.client_summary && <p>{i.client_summary}</p>}
+            {i.scenario_amounts && <div className="rounded border p-3"><div className="label-caps mb-2 text-muted-foreground">Hypothetical request scenarios — not expected approvals</div><div className="grid gap-2 sm:grid-cols-3">{(["conservative", "medium", "expanded"] as const).map((tier) => { const payment = i.payment_scenarios?.[tier]; return <div key={tier} className="rounded bg-muted/40 p-2 text-xs"><div className="font-medium capitalize">{tier} request</div><div>{fmtMoney(i.scenario_amounts![tier])}</div><div className="mt-1 text-muted-foreground">Monthly payment: {payment?.low == null ? "Unknown" : `${fmtMoney(payment.low)} – ${fmtMoney(payment.high)}`}</div></div>; })}</div>{i.planner_note && <p className="mt-2 text-xs text-muted-foreground">{i.planner_note}</p>}</div>}
             <div className="grid gap-4 md:grid-cols-2">
               <div><div className="label-caps mb-2 text-muted-foreground">Application checklist</div>
                 {i.checklist.length ? <ul className="list-disc space-y-1 pl-5">{i.checklist.map((c, k) => <li key={k}>{c}</li>)}</ul> : <p className="text-muted-foreground">Your advisor will add steps.</p>}</div>
@@ -59,6 +63,7 @@ export function PublishedStrategy({ content }: { content: SnapshotContent }) {
           </CardContent>
         </Card>
       ))}
+      {content.planner && <Card><CardHeader><CardTitle className="label-caps">Scenario assumptions and affordability notes</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-2"><div><div className="label-caps mb-2 text-muted-foreground">Affordability</div><p className="whitespace-pre-wrap text-xs text-muted-foreground">{content.planner.affordability_notes}</p></div><div><div className="label-caps mb-2 text-muted-foreground">Editorial sequencing</div><p className="whitespace-pre-wrap text-xs text-muted-foreground">{content.planner.sequencing_notes}</p></div></CardContent></Card>}
       <p className="rounded border border-gold bg-card p-4 text-xs text-muted-foreground">{content.disclaimer}</p>
     </div>
   );
