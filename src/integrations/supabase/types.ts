@@ -915,6 +915,21 @@ export type Database = {
           },
         ]
       }
+      owner_bootstrap_allowlist: {
+        Row: {
+          created_at: string
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active: boolean
@@ -1280,12 +1295,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bootstrap_role_decision: {
+        Args: { _confirmed: boolean; _email: string }
+        Returns: string
+      }
       can_access_client: {
         Args: { _cid: string; _uid: string }
         Returns: boolean
       }
       client_mark_task: {
         Args: { _note: string; _task: string }
+        Returns: undefined
+      }
+      grant_roles_on_confirm: {
+        Args: { _email: string; _uid: string }
         Returns: undefined
       }
       has_perm: { Args: { _perm: string; _uid: string }; Returns: boolean }

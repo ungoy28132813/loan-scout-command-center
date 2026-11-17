@@ -41,7 +41,7 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
         supabase.from("lender_products").select("id"),
         supabase.from("lender_rules").select("*").eq("approval_status", "active"),
       ]);
-      if (!prods.data?.length) { toast.error("No lender products on file yet. The owner adds products under Lenders."); return; }
+      if (!prods.data?.length) { refresh(); return; }
       const { data: runRow, error } = await supabase.from("match_runs").insert({ client_id: clientId, mode, engine_version: ENGINE_VERSION, critical_warnings: facts.criticalWarnings }).select("id").single();
       if (error || !runRow) { toast.error(error?.message ?? "Run failed"); return; }
       const evals = prods.data.map((p) => ({ p, e: evaluateProduct((rules.data ?? []).filter((r) => r.product_id === p.id) as unknown as Rule[], facts, mode) }));
@@ -55,6 +55,18 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
 
   if (!q.data) return null;
   const { results, products, snaps } = q.data;
+  if (products.length === 0 && results.length === 0) {
+    return (
+      <Card>
+        <CardHeader><CardTitle className="label-caps">Lender matching</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="font-medium">No verified lender products are available yet. Add a product with documented rules to begin matching.</p>
+          <p className="text-muted-foreground">The 24 lender names are on file, but no product requirements have been entered from documented sources. No matches or approval results are shown until they are.</p>
+          {me.primary === "owner" ? <Button asChild><Link to="/lenders">Add a lender product</Link></Button> : <p className="text-muted-foreground">Ask the owner to add lender products.</p>}
+        </CardContent>
+      </Card>
+    );
+  }
   const prod = (id: string) => products.find((p) => p.id === id);
   const canReview = me.perms.can_approve_publish;
 

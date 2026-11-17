@@ -35,5 +35,7 @@ use the editor.
 - Auditing is done by the `audit_trigger` on every app table, recording field names only (no values). Why: complete audit trail without PII in logs.
 - Matching is the pure deterministic module `src/lib/match-engine.ts` (tested); it evaluates only owner-approved rules with provenance, unknown never disqualifies, estimates never fail. Why: honesty and reproducibility.
 - Clients only ever see `published_snapshots` with status `published`; snapshots are immutable after publish and require an active assignment (DB trigger). Why: human review before any client visibility.
-- First account ever created becomes owner; afterwards roles come only from owner invitations (or public signup toggle → unassigned client). Why: no self-granted privileges.
+- After bootstrap, roles come only from owner invitations (or the public-signup toggle → unassigned client). Why: no self-granted privileges.
 - The logo slot is `src/components/brand/Logo.tsx`; never generate or imitate the Loan Scout logo.
+- Owner bootstrap: only a confirmed email in the private `owner_bootstrap_allowlist` table becomes owner, and only while no owner exists (single-owner unique index). All roles are granted on email confirmation via `grant_roles_on_confirm`. Why: prevents first-signup ownership takeover.
+- Security regression checks live in `tests/sql/owner_bootstrap_regression.sql`; run them with a read query after any auth/role change.
