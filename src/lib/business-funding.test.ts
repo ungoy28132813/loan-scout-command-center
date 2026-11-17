@@ -44,16 +44,23 @@ describe("goal-scoped business facts", () => {
 });
 
 describe("goal product scope", () => {
-  const products = [{ id: "pc", product_type: "credit_card" }, { id: "pl", product_type: "personal_loan" }, { id: "bc", product_type: "business_credit_card" }, { id: "bl", product_type: "business_loan" }, { id: "loc", product_type: "line_of_credit" }];
-  it("distinguishes personal and business cards and loans", () => {
+  const products = [
+    { id: "pc", product_type: "credit_card" }, { id: "pl", product_type: "personal_loan" },
+    { id: "ploc", product_type: "personal_line_of_credit" }, { id: "bc", product_type: "business_credit_card" },
+    { id: "bl", product_type: "business_loan" }, { id: "bloc", product_type: "business_line_of_credit" },
+    { id: "feature", product_type: "credit_card_feature" }, { id: "loc", product_type: "line_of_credit" },
+  ];
+  it("distinguishes personal and business cards, loans and credit lines", () => {
     expect(productBelongsToGoal("credit_card", "personal")).toBe(true);
     expect(productBelongsToGoal("business_credit_card", "business")).toBe(true);
-    expect(scopeProductsToGoal(products, "business").map((p) => p.id)).toEqual(["bc", "bl"]);
-    expect(scopeProductsToGoal(products, "personal").map((p) => p.id)).toEqual(["pc", "pl"]);
+    expect(scopeProductsToGoal(products, "business").map((p) => p.id)).toEqual(["bc", "bl", "bloc"]);
+    expect(scopeProductsToGoal(products, "personal").map((p) => p.id)).toEqual(["pc", "pl", "ploc"]);
   });
-  it("allows only an explicit staff override to include out-of-scope or ambiguous products", () => {
-    expect(scopeProductsToGoal(products, "business")).toHaveLength(2);
-    expect(scopeProductsToGoal(products, "business", true)).toHaveLength(5);
+  it("keeps card features and ambiguous legacy credit lines out of automatic goal matching", () => {
+    expect(productBelongsToGoal("credit_card_feature", "personal")).toBe(false);
+    expect(productBelongsToGoal("line_of_credit", "personal")).toBe(false);
+    expect(scopeProductsToGoal(products, "business")).toHaveLength(3);
+    expect(scopeProductsToGoal(products, "business", true)).toHaveLength(8);
   });
 });
 

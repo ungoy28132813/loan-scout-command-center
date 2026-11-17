@@ -1172,6 +1172,83 @@ export type Database = {
         }
         Relationships: []
       }
+      product_research_sources: {
+        Row: {
+          channel_scope: string
+          content_sha256: string | null
+          created_at: string
+          effective_date: string | null
+          id: string
+          product_id: string
+          proposed_changes: Json
+          retrieval_method: string
+          retrieved_at: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_checked_on: string
+          source_excerpt: string | null
+          source_locator: string | null
+          source_tier: string
+          source_title: string
+          source_url: string
+          submitted_by: string
+          version_label: string | null
+        }
+        Insert: {
+          channel_scope: string
+          content_sha256?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          product_id: string
+          proposed_changes?: Json
+          retrieval_method?: string
+          retrieved_at?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_checked_on: string
+          source_excerpt?: string | null
+          source_locator?: string | null
+          source_tier?: string
+          source_title: string
+          source_url: string
+          submitted_by: string
+          version_label?: string | null
+        }
+        Update: {
+          channel_scope?: string
+          content_sha256?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          product_id?: string
+          proposed_changes?: Json
+          retrieval_method?: string
+          retrieved_at?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_checked_on?: string
+          source_excerpt?: string | null
+          source_locator?: string | null
+          source_tier?: string
+          source_title?: string
+          source_url?: string
+          submitted_by?: string
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_research_sources_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active: boolean
@@ -1465,6 +1542,7 @@ export type Database = {
           bureau: string | null
           created_at: string
           criterion: string
+          effective_date: string | null
           evidence_status: string
           id: string
           lookback_months: number | null
@@ -1479,16 +1557,20 @@ export type Database = {
           scope: string
           score_model: string | null
           seed_key: string
+          source_excerpt: string | null
           source_locator: string | null
           source_title: string
           source_url: string
+          stale_after_days: number
           threshold: number | null
           verified_on: string
+          version_label: string | null
         }
         Insert: {
           bureau?: string | null
           created_at?: string
           criterion: string
+          effective_date?: string | null
           evidence_status?: string
           id?: string
           lookback_months?: number | null
@@ -1503,16 +1585,20 @@ export type Database = {
           scope: string
           score_model?: string | null
           seed_key: string
+          source_excerpt?: string | null
           source_locator?: string | null
           source_title: string
           source_url: string
+          stale_after_days?: number
           threshold?: number | null
           verified_on: string
+          version_label?: string | null
         }
         Update: {
           bureau?: string | null
           created_at?: string
           criterion?: string
+          effective_date?: string | null
           evidence_status?: string
           id?: string
           lookback_months?: number | null
@@ -1527,11 +1613,14 @@ export type Database = {
           scope?: string
           score_model?: string | null
           seed_key?: string
+          source_excerpt?: string | null
           source_locator?: string | null
           source_title?: string
           source_url?: string
+          stale_after_days?: number
           threshold?: number | null
           verified_on?: string
+          version_label?: string | null
         }
         Relationships: [
           {
@@ -1786,6 +1875,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      review_product_research: {
+        Args: { _decision: string; _id: string }
+        Returns: undefined
+      }
       review_source_candidate: {
         Args: { _decision: string; _id: string }
         Returns: string
@@ -1794,6 +1887,7 @@ export type Database = {
         Args: { _idempotency_key: string; _payload: Json; _report_id: string }
         Returns: string
       }
+      submit_product_research: { Args: { _payload: Json }; Returns: string }
       validate_client_extraction_payload: {
         Args: { _payload: Json }
         Returns: undefined

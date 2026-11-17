@@ -1,0 +1,4 @@
+ALTER TABLE public.lender_products DROP CONSTRAINT lender_products_product_type_check;
+ALTER TABLE public.lender_products ADD CONSTRAINT lender_products_product_type_check CHECK (product_type IN ('personal_loan','credit_card','business_credit_card','business_loan','line_of_credit','personal_line_of_credit','business_line_of_credit','credit_card_feature','unknown'));
+ALTER TABLE public.lender_products DROP CONSTRAINT lender_products_amount_kind_check;
+ALTER TABLE public.lender_products ADD CONSTRAINT lender_products_amount_kind_check CHECK (amount_kind IN ('loan_cash','credit_limit','available_credit','unknown'));

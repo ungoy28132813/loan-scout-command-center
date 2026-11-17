@@ -4,7 +4,9 @@
 - [x] Section 01: safely available fixes, acceptance results, blockers, verification and cleanup (docs/BUILD_QUEUE.md)
 - [x] Section 02: browser-local OCR, evidence parsing, review acceptance, and validated-match recomputation
 - [x] Section 02: final build log, cleanup verification, and commit (tests and documentation complete)
-- [ ] Sections 03–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
+- [ ] Section 03: verified product catalog expansion and on-demand source research/review
+- [ ] Section 03: seed/security/browser verification, documentation, cleanup, and commit
+- [ ] Sections 04–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
 ## Phase 1 — open
 - [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
 - [x] Automated credit-report PDF extraction — browser-local, text-layer PDFs, best effort

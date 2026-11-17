@@ -17,8 +17,9 @@ export interface BusinessFinancialProfile {
 }
 
 export function productBelongsToGoal(productType: string, goalType: GoalType): boolean {
-  if (goalType === "business") return productType === "business_credit_card" || productType === "business_loan";
-  return productType === "personal_loan" || productType === "credit_card";
+  // Card features and legacy ambiguous credit lines remain visible in research but are not goal-matched.
+  if (goalType === "business") return ["business_credit_card", "business_loan", "business_line_of_credit"].includes(productType);
+  return ["personal_loan", "credit_card", "personal_line_of_credit"].includes(productType);
 }
 
 export function scopeProductsToGoal<T extends { product_type: string }>(products: T[], goalType: GoalType, includeOutsideScope = false): T[] {

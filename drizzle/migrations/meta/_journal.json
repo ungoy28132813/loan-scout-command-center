@@ -155,6 +155,27 @@
       "when": 1794884554412,
       "tag": "0021_credit_ocr_and_verified_analysis",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794885192654,
+      "tag": "0022_lender_product_research_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794885227916,
+      "tag": "0023_expand_lender_product_taxonomy",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794885252712,
+      "tag": "0024_expand_verified_lender_product_catalog",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { researchIsStale } from "@/lib/lender-research";
 import type { Tables } from "@/integrations/supabase/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,8 @@ export function CandidateRow({ c, productLabel, isOwner, onDone }: { c: Candidat
       </span>
     </div>
     {!c.representable && c.not_enforced_reason && <div className="mt-1 text-xs text-muted-foreground">Why not enforced: {c.not_enforced_reason}</div>}
-    <div className="mt-1 text-xs text-muted-foreground">Source: <a href={c.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">{c.source_title}<ExternalLink className="h-3 w-3" /></a>{c.source_locator ? ` · ${c.source_locator}` : ""} · public source checked {c.verified_on} · {c.evidence_status.replace(/_/g, " ")}</div>
+    <div className="mt-1 text-xs text-muted-foreground">Source: <a href={c.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">{c.source_title}<ExternalLink className="h-3 w-3" /></a>{c.source_locator ? ` · ${c.source_locator}` : ""} · public source checked {c.verified_on}{c.effective_date ? ` · effective ${c.effective_date}` : ""}{c.version_label ? ` · version ${c.version_label}` : ""} · {c.evidence_status.replace(/_/g, " ")}{researchIsStale(c.verified_on) && <b> · stale; recheck required</b>}</div>
+    {c.source_excerpt && <details className="mt-2"><summary className="cursor-pointer text-xs font-medium">Source excerpt</summary><div className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-xs">{c.source_excerpt}</div></details>}
     {isOwner && c.review_status === "pending" && <div className="mt-2 flex flex-wrap gap-2">
       {c.representable && <Button size="sm" disabled={busy} onClick={() => decide("approve_active")}>Approve & activate rule</Button>}
       <Button size="sm" variant="secondary" disabled={busy} onClick={() => decide("keep_note")}>Keep as source note</Button>
