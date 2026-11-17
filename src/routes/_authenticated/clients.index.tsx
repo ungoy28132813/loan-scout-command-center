@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ function Clients() {
   const sel = (k: keyof Filters, opts: [string, string][], label: string) => <Select value={f[k]} onValueChange={(v) => setF({ ...f, [k]: v })}><SelectTrigger aria-label={label} className="w-40"><SelectValue /></SelectTrigger><SelectContent>{opts.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select>;
   return (
     <div>
-      <PageHeader title="Client Directory" kicker={me?.primary === "owner" ? "All clients" : "Your assigned clients"}>{me?.primary === "owner" && <NewClient />}</PageHeader>
+      <PageHeader title="Client Directory" kicker={me?.primary === "owner" ? "All clients" : "Your assigned clients"}>{me?.primary === "owner" && (q.data?.clients.length ?? 0) > 0 && <NewClient />}</PageHeader>
       <Card className="mb-4"><CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap gap-2">
           <Input placeholder="Search name or email" className="w-64" value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} />
@@ -60,7 +60,11 @@ function Clients() {
         </div>
       </CardContent></Card>
       <Card><CardContent className="p-0">
-        {rows.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No clients match.</p> :
+        {rows.length === 0 ? (q.data?.clients.length === 0 ? <div className="space-y-3 p-6">
+          <h2 className="font-display text-3xl">{me?.primary === "owner" ? "Start with your first client" : "No assigned clients yet"}</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">{me?.primary === "owner" ? "Create a client file to upload documents, read text-based credit PDFs locally, review the evidence and prepare a match run. Use DEMO for synthetic testing only." : "The owner assigns clients to you. You’ll see only those files here, with the permissions granted to your account."}</p>
+          {me?.primary === "owner" && <NewClient label="Add your first client" />}
+        </div> : <div className="flex flex-wrap items-center justify-between gap-3 p-6"><p className="text-sm text-muted-foreground">No clients match these filters.</p><Button size="sm" variant="outline" onClick={() => setF(DEFAULT)}>Reset filters</Button></div>) :
           <ul className="divide-y">{rows.map((c) => <li key={c.id}><Link to="/clients/$clientId" params={{ clientId: c.id }} className="flex flex-wrap items-center justify-between gap-2 p-4 hover:bg-muted">
             <span><span className="font-medium">{c.display_name}</span> {c.is_demo && <DemoBadge />}<div className="text-xs text-muted-foreground">{c.email ?? "No email"} · added {fmtDate(c.created_at)}</div></span>
             <span className="flex items-center gap-2">{!q.data!.assigned.has(c.id) && <StatusBadge value="needs_review" label="unassigned" />}<StatusBadge value={c.stage} /></span>
@@ -70,18 +74,25 @@ function Clients() {
   );
 }
 
-function NewClient() {
+function NewClient({ label = "Add client" }: { label?: string }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false); const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [invite, setInvite] = useState(true); const [demo, setDemo] = useState(false);
   const create = async () => {
     if (!name.trim()) return;
     const { data, error } = await supabase.from("clients").insert({ display_name: name.slice(0, 120), email: email.trim().toLowerCase() || null, is_demo: demo }).select("id").single();
     if (error || !data) return void toast.error(error?.message ?? "Failed");
-    if (invite && email.trim()) await supabase.from("invitations").insert({ email: email.trim().toLowerCase(), role: "client", client_id: data.id });
-    toast.success(invite && email ? "Client created. Invitation recorded — the client signs in with this email at the sign-in page." : "Client created");
-    setOpen(false); setName(""); setEmail(""); qc.invalidateQueries({ queryKey: ["directory"] });
+    if (invite && email.trim()) {
+      const inviteResult = await supabase.from("invitations").insert({ email: email.trim().toLowerCase(), role: "client", client_id: data.id });
+      if (inviteResult.error) toast.error(`Client created, but the invitation could not be recorded: ${inviteResult.error.message}`);
+    }
+    toast.success(invite && email ? "Client created. Ask them to create an account with this exact email." : "Client created");
+    setOpen(false); setName(""); setEmail("");
+    qc.invalidateQueries({ queryKey: ["directory"] });
+    qc.invalidateQueries({ queryKey: ["staff-dashboard"] });
+    navigate({ to: "/clients/$clientId", params: { clientId: data.id } });
   };
-  if (!open) return <Button onClick={() => setOpen(true)}>Add client</Button>;
+  if (!open) return <Button onClick={() => setOpen(true)}>{label}</Button>;
   return <Card className="w-full max-w-md"><CardContent className="space-y-2 p-4">
     <Input placeholder="Client name" value={name} onChange={(e) => setName(e.target.value)} />
     <Input placeholder="Email (for portal access)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />

@@ -98,7 +98,7 @@ function ConsentCard({ me, clientId, onDone }: { me: Me; clientId: string; onDon
     <Card className="mb-6 border-primary">
       <CardHeader><CardTitle className="label-caps">Authorization required</CardTitle></CardHeader>
       <CardContent className="space-y-3 text-sm">
-        <label className="flex gap-2"><Checkbox checked={a} onCheckedChange={(v) => setA(Boolean(v))} /> <span>I have read the Loan Scout LLC privacy notice: my documents are stored privately, accessed only by me and assigned staff, every access is logged, and records are retained until deleted by the Loan Scout owner subject to law.</span></label>
+        <label className="flex gap-2"><Checkbox checked={a} onCheckedChange={(v) => setA(Boolean(v))} /> <span>I have read the Loan Scout LLC privacy notice: my documents are stored privately, accessed only by me and assigned staff, document views, exports and changes are logged, and records are retained until deleted by the Loan Scout owner subject to law.</span></label>
         <label className="flex gap-2"><Checkbox checked={b} onCheckedChange={(v) => setB(Boolean(v))} /> <span>I authorize Loan Scout LLC to review and analyze the credit reports and financial documents I provide, for the purpose of identifying potential funding options. I understand this tool does not pull my credit or submit applications.</span></label>
         <Button disabled={!a || !b} onClick={accept}>I agree</Button>
       </CardContent>

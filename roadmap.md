@@ -12,4 +12,8 @@
 - [ ] Owner reviews 13 pending source criteria (waiting on owner)
 - [ ] Questionnaire inputs + rule types for existing-account age, membership duration, direct deposit (kept as notes for now)
 - [ ] Optional: Chase My Chase Loan as a card-feature product type (not added)
+- [x] Production-readiness pass: owner empty states and accurate security/authentication copy
+- [x] Production-readiness pass: internal function privileges and rollback-only role/RLS regression checks
+- [x] Production-readiness pass: synthetic owner workflow through publication and cleanup
+- [ ] Temporary-account browser role tests (waiting on test-user creation approval; SQL role simulations passed)
 ## Phase 2 / 3 — see /roadmap page in app

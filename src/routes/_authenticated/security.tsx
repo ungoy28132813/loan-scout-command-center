@@ -21,10 +21,10 @@ const POSTURE: [string, string, boolean][] = [
   ["Encryption", "Data is encrypted in transit (HTTPS) and at rest by Lovable Cloud's managed storage and database.", true],
   ["Append-only audit log", "Database triggers record who changed what (field names only, no sensitive values).", true],
   ["Owner-only permanent deletion", "Only the owner can delete documents and reports.", true],
-  ["Sign-in", "Email one-time links, or an optional password each user sets for themselves (leaked passwords rejected). No public password signup.", true],
+  ["Sign-in", "Email one-time links and email/password account creation are available. New accounts have no access until invited, unless public client sign-up is explicitly enabled. Existing users can also set their own password; known leaked passwords are rejected.", true],
   ["Passkeys", "Not implemented yet.", false],
   ["Forced remote sign-out of a user", "Not implemented yet — deactivation blocks all data access immediately instead.", false],
-  ["Automated PDF extraction", "Not implemented — staff enter data from the source PDF.", false],
+  ["Automated PDF extraction", "Text-layer PDFs are read locally in an authorized staff browser, with review flags. Scanned reports still need OCR or manual entry.", true],
 ];
 
 function Security() {

@@ -41,7 +41,7 @@ function Team() {
   return (
     <div>
       <PageHeader title="Team & Access" kicker="Owner controls" />
-      <Card className="mb-4"><CardHeader><CardTitle className="label-caps">Invite employee</CardTitle><p className="text-sm text-muted-foreground">The invited person signs in with a one-time email link. Automated invitation emails are not sent by this tool; let them know to visit the sign-in page.</p></CardHeader>
+      <Card className="mb-4"><CardHeader><CardTitle className="label-caps">Invite employee</CardTitle><p className="text-sm text-muted-foreground">Record the invitation, then ask the employee to create an account with this exact email on the sign-in page. They can confirm by email link and set their own password. This tool does not send a separate invitation email.</p></CardHeader>
         <CardContent className="flex gap-2"><Input type="email" placeholder="employee@loanscout…" value={email} onChange={(e) => setEmail(e.target.value)} /><Button onClick={invite}>Invite</Button></CardContent></Card>
       <div className="space-y-4">
         {q.data.profiles.length === 0 && <Card><CardContent className="p-6 text-sm text-muted-foreground">No employees yet.</CardContent></Card>}

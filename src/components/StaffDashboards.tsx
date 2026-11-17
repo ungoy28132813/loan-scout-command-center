@@ -68,6 +68,14 @@ export function OwnerCommandCenter({ me }: { me: Me }) {
         <Stat label="Employees" value={team.data ?? 0} to="/team" />
         <Stat label="Awaiting source review" value={data.pendingSources} to="/lenders" hint="Lender criteria — owner decides" />
       </div>
+      {(data.clients.length === 0 || activeRules.length === 0) && <Card className="mt-6 border-primary">
+        <CardHeader><CardTitle className="font-display text-3xl">Set up your workspace</CardTitle><p className="text-sm text-muted-foreground">Start with a client file. Review lender sources separately; nothing becomes an underwriting rule without your decision.</p></CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="rounded border p-4"><div className="label-caps text-primary">Step 1 · Client file</div><p className="mt-2 text-sm text-muted-foreground">Add a client, then upload a report, review extracted values, answer only relevant questions and run matching.</p><Link to="/clients" className="mt-3 inline-block text-sm font-medium text-primary underline">{data.clients.length === 0 ? "Add your first client" : "Open client directory"}</Link></div>
+          <div className="rounded border p-4"><div className="label-caps text-primary">Step 2 · Lender sources</div><p className="mt-2 text-sm text-muted-foreground">{activeRules.length === 0 ? "No active cited rules yet. Matching will honestly return Needs Review with no score until you approve suitable criteria." : `${activeRules.length} cited rules are active.`} You can keep unsuitable criteria as non-enforced notes.</p><Link to="/lenders" className="mt-3 inline-block text-sm font-medium text-primary underline">Review {data.pendingSources} pending sources</Link></div>
+          <div className="rounded border p-4"><div className="label-caps text-primary">Optional · Your team</div><p className="mt-2 text-sm text-muted-foreground">Invite employees, choose feature permissions and assign only the clients they should access.</p><Link to="/team" className="mt-3 inline-block text-sm font-medium text-primary underline">Set up Team & Access</Link></div>
+        </CardContent>
+      </Card>}
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card><CardHeader><CardTitle className="label-caps">Case stages</CardTitle></CardHeader><CardContent className="space-y-2">
           {stages.map((s) => <div key={s} className="flex justify-between text-sm"><span className="capitalize">{s}</span><span className="font-semibold">{data.clients.filter((c) => c.stage === s).length}</span></div>)}
@@ -87,7 +95,7 @@ export function OwnerCommandCenter({ me }: { me: Me }) {
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle className="label-caps">Unassigned clients</CardTitle></CardHeader><CardContent>
-          {unassigned.length === 0 ? <p className="text-sm text-muted-foreground">Every client has an assigned team member.</p> :
+          {data.clients.length === 0 ? <p className="text-sm text-muted-foreground">No clients yet. Use “Add your first client” above to begin.</p> : unassigned.length === 0 ? <p className="text-sm text-muted-foreground">Every client has an assigned team member.</p> :
             <ul className="space-y-2">{unassigned.slice(0, 8).map((c) => <li key={c.id} className="flex items-center justify-between text-sm"><Link to="/clients/$clientId" params={{ clientId: c.id }} className="hover:underline">{c.display_name} {c.is_demo && <DemoBadge />}</Link><Link to="/team" className="text-primary">Assign</Link></li>)}</ul>}
           <p className="mt-3 text-xs text-muted-foreground">Unassigned clients receive no published recommendations until you assign them.</p>
         </CardContent></Card>

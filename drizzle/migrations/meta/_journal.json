@@ -64,6 +64,20 @@
       "when": 1794880127620,
       "tag": "0008_lender_catalog_and_source_review",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794881256962,
+      "tag": "0009_restrict_internal_trigger_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794881614318,
+      "tag": "0010_lock_source_review_table_grants",
+      "breakpoints": true
     }
   ]
 }
