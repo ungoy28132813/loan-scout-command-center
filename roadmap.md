@@ -20,4 +20,8 @@
 - [x] Owner-only orphaned private test-file inventory and safe cleanup (known synthetic orphan deleted)
 - [x] Client-local PDF extraction into consented unverified staging with staff import/acceptance
 - [x] Client extraction security regression tests and synthetic client-to-staff browser workflow
+- [x] Phase 2 historical credit-report comparison with confirmed provenance-aware changes
+- [x] Phase 2 revolving utilization/paydown simulator with conservative account reconciliation
+- [x] Phase 2 synthetic unit and browser verification with cleanup
+- [ ] Lender-specific simulation from hypothetical utilization (not built; utilization math only)
 ## Phase 2 / 3 — see /roadmap page in app

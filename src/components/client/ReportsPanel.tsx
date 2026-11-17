@@ -13,6 +13,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StatusBadge } from "@/components/StatusBadge";
 import { extractStoredReport, saveExtraction } from "@/lib/credit-report-parser/save";
 import { PdfReadError } from "@/lib/credit-report-parser/pdf";
+import { HistoricalComparison, UtilizationSimulator } from "@/components/client/Phase2Analysis";
+import type { AnalysisReport } from "@/lib/credit-analysis";
 
 const BUREAUS = ["experian", "equifax", "transunion"] as const;
 const STATUSES = ["awaiting_manual_entry", "partial", "unreadable", "clearer_pdf_requested", "complete_unverified", "verified"];
@@ -25,7 +27,7 @@ function submissionStatus(payload: unknown) {
   return payload && typeof payload === "object" && typeof (payload as Record<string, unknown>)["status"] === "string" ? String((payload as Record<string, unknown>)["status"]) : "unknown";
 }
 
-export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me: Me; onChanged: () => void }) {
+export function ReportsPanel({ clientId, me, activeRuleCount, onChanged }: { clientId: string; me: Me; activeRuleCount: number; onChanged: () => void }) {
   const qc = useQueryClient();
   const canEdit = me.perms.can_edit_extractions;
   const q = useQuery({ queryKey: ["reports", clientId], queryFn: async () => {
@@ -63,6 +65,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
   };
   if (!q.data) return null;
   const report = q.data.reports.find((r) => r.id === (sel ?? q.data.reports[0]?.id));
+  const analysisReports: AnalysisReport[] = q.data.reports.map((r) => ({ id: r.id, report_date: r.report_date, created_at: r.created_at, extraction_status: r.extraction_status, file_name: (r.documents as { file_name?: string } | null)?.file_name ?? null }));
 
   const setStatus = async (s: string) => {
     if (!report) return;
@@ -120,6 +123,8 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
             </CardContent>
           </Card>
         )}
+        {report && <UtilizationSimulator report={analysisReports.find((r) => r.id === report.id)!} tradelines={q.data.tradelines} activeRuleCount={activeRuleCount} />}
+        <HistoricalComparison reports={analysisReports} fields={q.data.fields} tradelines={q.data.tradelines} />
         <Card><CardHeader><CardTitle className="label-caps">Correction history</CardTitle></CardHeader><CardContent>
           {q.data.corrections.length === 0 ? <p className="text-sm text-muted-foreground">No corrections.</p> :
             <ul className="divide-y text-sm">{q.data.corrections.map((c) => <li key={c.id} className="py-2">{fmtDate(c.created_at)} · {String(c.old_value ?? "Unknown")} → {String(c.new_value ?? "Unknown")} · <span className="text-muted-foreground">{c.reason}{c.source_ref ? ` (source: ${c.source_ref})` : ""}</span></li>)}</ul>}
