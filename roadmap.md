@@ -1,6 +1,6 @@
 # Roadmap
 ## Phase 1 — open
-- [ ] Install original Loan Scout LLC logo (blocked: owner must upload the file)
+- [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
 - [ ] Automated credit-report PDF extraction (needs owner decision on processing provider for PII)
 - [ ] Passkey sign-in
 - [ ] Forced remote sign-out on deactivation
