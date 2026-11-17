@@ -50,6 +50,17 @@ export const RULE_KEYS = [
   ["min_months_in_business", "Min months in business"],
   ["min_annual_revenue", "Min annual business revenue"],
   ["min_annual_income", "Min annual income"],
+  ["min_existing_product_months", "Qualifying existing product age (months)"],
+  ["min_membership_months", "Credit union membership age (months)"],
+  ["requires_direct_deposit", "Qualifying direct deposit required"],
+  ["max_late_payments", "Maximum late payments in lookback"],
+  ["max_delinquent_accounts", "Maximum currently delinquent accounts"],
+  ["max_collections", "Maximum collections"],
+  ["max_chargeoffs", "Maximum charge-offs"],
+  ["min_banking_history_months", "Minimum banking history (months)"],
+  ["min_average_monthly_deposits", "Minimum average monthly deposits"],
+  ["min_owner_share_pct", "Minimum owner share %"],
+  ["allowed_states", "Allowed location / residency states"],
 ] as const;
 export const SCORE_MODELS = ["FICO 8", "FICO 9", "FICO 10", "FICO 10T", "FICO Bankcard 8", "FICO Auto 8", "FICO 2 (Experian)", "FICO 5 (Equifax)", "FICO 4 (TransUnion)", "VantageScore 3.0", "VantageScore 4.0"];
 export const REPORT_FIELDS = [

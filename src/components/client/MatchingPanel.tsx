@@ -57,7 +57,7 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
       if (error || !runRow) { toast.error(error?.message ?? "Run failed"); return; }
       const evals = scopedProducts.map((p) => ({ p, e: evaluateProduct((rules.data ?? []).filter((r) => r.product_id === p.id) as unknown as Rule[], facts, mode) }));
       evals.sort((a, b) => (b.e.score ?? -1) - (a.e.score ?? -1));
-      const rows = evals.map(({ p, e }, i) => ({ run_id: runRow.id, client_id: clientId, product_id: p.id, status: e.status, suitability_score: e.score, conditions: { list: e.conditions, summary: e.summary, steps: e.improvement_steps } as never, rank: i + 1 }));
+      const rows = evals.map(({ p, e }, i) => ({ run_id: runRow.id, client_id: clientId, product_id: p.id, status: e.status, suitability_score: e.score, conditions: { list: e.conditions, summary: e.summary, steps: e.improvement_steps, pricing_assumption: e.pricing_assumption } as never, rank: i + 1 }));
       const ins = await supabase.from("match_results").insert(rows);
       if (ins.error) toast.error(ins.error.message); else toast.success(`Evaluated ${rows.length} products (${mode} mode). Nothing is published until you approve.`);
       refresh();
@@ -122,7 +122,7 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
         <CardHeader><CardTitle className="label-caps">Match review center</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {results.map((r, idx) => {
-            const p = prod(r.product_id); const c = r.conditions as unknown as { list: Condition[]; summary: string; steps: string[] };
+            const p = prod(r.product_id); const c = r.conditions as unknown as { list: Condition[]; summary: string; steps: string[]; pricing_assumption?: string };
             return (
               <div key={r.id} className={`rounded border p-4 ${r.review_status === "rejected" ? "opacity-60" : ""}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -134,6 +134,8 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{c?.summary}</p>
                 <div className="mt-1 text-xs text-muted-foreground">Published range: {p?.published_min_amount == null && p?.published_max_amount == null ? "Unknown" : `${fmtMoney(p?.published_min_amount)} – ${fmtMoney(p?.published_max_amount)}`} ({p?.amount_kind === "credit_limit" ? "credit limit, not cash" : p?.amount_kind}) · Pull: {p?.pull_type}</div>
+                {(p?.published_apr_min != null || p?.published_apr_max != null) && <div className="mt-1 text-xs text-muted-foreground">Marketed APR: {p.published_apr_min ?? "?"}% – {p.published_apr_max ?? "?"}%{p.apr_as_of ? ` · as of ${p.apr_as_of}` : ""} · product-level, not an offer</div>}
+                <p className="mt-1 text-xs text-muted-foreground">{c?.pricing_assumption ?? "Eligibility conditions do not infer individualized pricing, approval odds, or a funding offer."}</p>
                 {c?.list?.length > 0 && <ul className="mt-3 divide-y rounded border text-sm">{c.list.map((x, k) => (
                   <li key={k} className="grid gap-1 p-2 md:grid-cols-[1fr_auto]">
                     <div><b>{x.label}</b> — required {x.required}, observed {x.observed}. <span className="text-muted-foreground">{x.explanation}</span>

@@ -1,39 +1,30 @@
-# Roadmap
-## Build queue — current
-- [x] Section 01: security, identity, consent; audit and test owner/employee/client boundaries
-- [x] Section 01: safely available fixes, acceptance results, blockers, verification and cleanup (docs/BUILD_QUEUE.md)
-- [x] Section 02: browser-local OCR, evidence parsing, review acceptance, and validated-match recomputation
-- [x] Section 02: final build log, cleanup verification, and commit (tests and documentation complete)
-- [x] Section 03: verified product catalog expansion and on-demand source research/review
-- [x] Section 03: seed/security/browser verification, documentation, cleanup, and commit
-- [ ] Sections 04–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
-## Phase 1 — open
-- [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
-- [x] Automated credit-report PDF extraction — browser-local, text-layer PDFs, best effort
-- [x] OCR for scanned/image-only reports — browser-local English OCR, 20 scanned-page cap, mandatory review
-- [x] Review-confirm action for automatically read accounts — atomic staff acceptance and audited corrections
-- [x] Signed-in end-to-end upload test — owner session, DEMO client, synthetic 3-bureau PDF read in browser
-- [ ] Passkey sign-in
-- [ ] Forced remote sign-out on deactivation
-- [ ] Automatic release of scheduled publications
-- [x] First real product catalog (5 products + scoped Prosper Note Channel record) and owner source review queue
-- [ ] Owner reviews 13 pending source criteria (waiting on owner)
-- [ ] Questionnaire inputs + rule types for existing-account age, membership duration, direct deposit (kept as notes for now)
-- [x] Chase My Chase Loan as an official-source card-feature product type (excluded from standalone-loan matching)
-- [x] Production-readiness pass: owner empty states and accurate security/authentication copy
-- [x] Production-readiness pass: internal function privileges and rollback-only role/RLS regression checks
-- [x] Production-readiness pass: synthetic owner workflow through publication and cleanup
-- [ ] Temporary-account browser role tests (waiting on test-user creation approval; SQL role simulations passed)
-- [x] Persist live profile email/activation/department safeguard and regression tests
-- [x] Owner-only orphaned private test-file inventory and safe cleanup (known synthetic orphan deleted)
-- [x] Client-local PDF extraction into consented unverified staging with staff import/acceptance
-- [x] Client extraction security regression tests and synthetic client-to-staff browser workflow
-- [x] Phase 2 historical credit-report comparison with confirmed provenance-aware changes
-- [x] Phase 2 revolving utilization/paydown simulator with conservative account reconciliation
-- [x] Phase 2 synthetic unit and browser verification with cleanup
-- [ ] Lender-specific simulation from hypothetical utilization (not built; utilization math only)
-- [x] Phase 2 multi-business profiles, independent goals, and verified-state financial inputs
-- [x] Goal/business-specific matching facts and product scope
-- [x] Multi-business security, unit, and synthetic browser verification with cleanup
-- [ ] Advanced business financial modeling and affordability scenarios (not built; basic comparable-period math is live)
-## Phase 2 / 3 — see /roadmap page in app
+# Loan Scout build roadmap
+
+## Platform / security
+- [x] Role-based auth, invitations, active assignments, private documents, consent, audit logs, Security Center
+- [x] Private owner bootstrap; no first-signup takeover; public registration off by default
+- [x] Profile self-update safeguard and regression checks
+- [x] Owner-only orphaned private-file inventory and safe cleanup
+- [x] Optional email/password Create Account + magic links; no shared admin login
+- [x] Section 01 security/identity/consent acceptance; passkey and remote sign-out blockers documented
+
+## Phase 1
+- [x] Client directory, documents, staff extraction and client staging
+- [x] Browser-local PDF parser + synthetic fixtures; consented client structured submission and staff import/acceptance
+- [x] Source-backed lender products and pending owner-only source review (no active rules yet)
+- [x] Deterministic matching, review center, immutable published snapshots, PDF export
+- [x] Basic application pipeline, readiness tasks, one-way announcements
+
+## Phase 2
+- [x] Business funding profiles + goal-specific financial scoping (implemented before the build queue)
+- [x] Historical credit-report comparison + utilization/paydown simulator (implemented before the build queue)
+- [x] Section 02 browser-local OCR and expanded verified report analysis
+- [x] Section 03 expanded official-source product catalog and on-demand research/review
+- [x] Section 04 goal-scoped conditional answers, provenance, expanded deterministic rule coverage, joint safeguards
+- [ ] Business financial modeling / cross-product funding scenarios
+- [ ] Observed outcomes / learning (Phase 3; owner review required)
+- [ ] On-demand lender policy research (Phase 3; no scheduled monitoring)
+
+## Build queue acceptance
+- [x] Sections 01–04 completed with documented acceptance and rollback/security checks
+- [ ] Sections 05–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order

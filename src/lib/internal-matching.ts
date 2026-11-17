@@ -42,7 +42,7 @@ export async function recalculateInternalMatches(clientId: string): Promise<{ ru
       product_id: product.id,
       status: evaluation.status,
       suitability_score: evaluation.score,
-      conditions: { list: evaluation.conditions, summary: evaluation.summary, steps: evaluation.improvement_steps } as never,
+      conditions: { list: evaluation.conditions, summary: evaluation.summary, steps: evaluation.improvement_steps, pricing_assumption: evaluation.pricing_assumption } as never,
       rank: index + 1,
     }));
     const { error: resultError } = await supabase.from("match_results").insert(rows);

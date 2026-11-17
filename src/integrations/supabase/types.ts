@@ -787,6 +787,70 @@ export type Database = {
           },
         ]
       }
+      goal_questionnaire_answers: {
+        Row: {
+          answered_by: string | null
+          client_id: string
+          financial_source: string
+          goal_id: string
+          id: string
+          question_key: string
+          status: string
+          updated_at: string
+          value_numeric: number | null
+          value_text: string | null
+          verified: boolean
+        }
+        Insert: {
+          answered_by?: string | null
+          client_id: string
+          financial_source?: string
+          goal_id: string
+          id?: string
+          question_key: string
+          status?: string
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+          verified?: boolean
+        }
+        Update: {
+          answered_by?: string | null
+          client_id?: string
+          financial_source?: string
+          goal_id?: string
+          id?: string
+          question_key?: string
+          status?: string
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_questionnaire_answers_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_questionnaire_answers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_questionnaire_answers_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "funding_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_notes: {
         Row: {
           author: string
@@ -930,6 +994,7 @@ export type Database = {
       }
       lender_rules: {
         Row: {
+          application_mode: string
           approval_status: string
           approved_at: string | null
           approved_by: string | null
@@ -937,9 +1002,11 @@ export type Database = {
           created_at: string
           effective_date: string | null
           id: string
+          input_key: string | null
           lookback_months: number | null
           product_id: string
           proposed_by: string | null
+          requires_verified_facts: boolean
           rule_key: string
           score_model: string | null
           source_tier: string
@@ -947,11 +1014,13 @@ export type Database = {
           source_url: string
           stale_after_days: number
           supersedes: string | null
+          text_threshold: string | null
           threshold: number
           verified_on: string
           version: number
         }
         Insert: {
+          application_mode?: string
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
@@ -959,9 +1028,11 @@ export type Database = {
           created_at?: string
           effective_date?: string | null
           id?: string
+          input_key?: string | null
           lookback_months?: number | null
           product_id: string
           proposed_by?: string | null
+          requires_verified_facts?: boolean
           rule_key: string
           score_model?: string | null
           source_tier: string
@@ -969,11 +1040,13 @@ export type Database = {
           source_url: string
           stale_after_days?: number
           supersedes?: string | null
+          text_threshold?: string | null
           threshold: number
           verified_on: string
           version?: number
         }
         Update: {
+          application_mode?: string
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
@@ -981,9 +1054,11 @@ export type Database = {
           created_at?: string
           effective_date?: string | null
           id?: string
+          input_key?: string | null
           lookback_months?: number | null
           product_id?: string
           proposed_by?: string | null
+          requires_verified_facts?: boolean
           rule_key?: string
           score_model?: string | null
           source_tier?: string
@@ -991,6 +1066,7 @@ export type Database = {
           source_url?: string
           stale_after_days?: number
           supersedes?: string | null
+          text_threshold?: string | null
           threshold?: number
           verified_on?: string
           version?: number
@@ -1539,16 +1615,19 @@ export type Database = {
       }
       source_review_candidates: {
         Row: {
+          application_mode: string
           bureau: string | null
           created_at: string
           criterion: string
           effective_date: string | null
           evidence_status: string
           id: string
+          input_key: string | null
           lookback_months: number | null
           not_enforced_reason: string | null
           product_id: string
           representable: boolean
+          requires_verified_facts: boolean
           resulting_rule_id: string | null
           review_status: string
           reviewed_at: string | null
@@ -1562,21 +1641,25 @@ export type Database = {
           source_title: string
           source_url: string
           stale_after_days: number
+          text_threshold: string | null
           threshold: number | null
           verified_on: string
           version_label: string | null
         }
         Insert: {
+          application_mode?: string
           bureau?: string | null
           created_at?: string
           criterion: string
           effective_date?: string | null
           evidence_status?: string
           id?: string
+          input_key?: string | null
           lookback_months?: number | null
           not_enforced_reason?: string | null
           product_id: string
           representable?: boolean
+          requires_verified_facts?: boolean
           resulting_rule_id?: string | null
           review_status?: string
           reviewed_at?: string | null
@@ -1590,21 +1673,25 @@ export type Database = {
           source_title: string
           source_url: string
           stale_after_days?: number
+          text_threshold?: string | null
           threshold?: number | null
           verified_on: string
           version_label?: string | null
         }
         Update: {
+          application_mode?: string
           bureau?: string | null
           created_at?: string
           criterion?: string
           effective_date?: string | null
           evidence_status?: string
           id?: string
+          input_key?: string | null
           lookback_months?: number | null
           not_enforced_reason?: string | null
           product_id?: string
           representable?: boolean
+          requires_verified_facts?: boolean
           resulting_rule_id?: string | null
           review_status?: string
           reviewed_at?: string | null
@@ -1618,6 +1705,7 @@ export type Database = {
           source_title?: string
           source_url?: string
           stale_after_days?: number
+          text_threshold?: string | null
           threshold?: number | null
           verified_on?: string
           version_label?: string | null
@@ -1802,6 +1890,14 @@ export type Database = {
       accept_staff_extraction: {
         Args: { _report_id: string }
         Returns: undefined
+      }
+      active_goal_question_definitions: {
+        Args: never
+        Returns: {
+          input_key: string
+          requires_verified_facts: boolean
+          rule_key: string
+        }[]
       }
       bootstrap_role_decision: {
         Args: { _confirmed: boolean; _email: string }

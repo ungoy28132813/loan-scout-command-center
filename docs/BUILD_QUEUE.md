@@ -7,7 +7,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 01 | Security, identity and consent | **completed** — available scope verified; two external capability blockers below |
 | 02 | Credit PDF / OCR | **completed** — local English OCR and verified-analysis scope verified; documented scan/layout limits below |
 | 03 | Lender Catalog / Research | **completed** — official-source retrieval and owner review verified; AI interpretation remains pending |
-| 04 | Underwriting Rules / Questionnaires | queued |
+| 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
 | 05 | Funding Planning / Simulators | queued |
 | 06 | Guided Applications / Outcomes | queued |
 | 07 | Client Publishing / Documents / Exports | queued |
@@ -119,3 +119,31 @@ Lender research, further underwriting inputs, simulators, guided applications/ou
 - Direct retrieval supports public HTML/text only. PDFs, blocked pages, unsupported content types, responses over 1 MB, timeouts, and unreadable pages require truthful manual source submission with an excerpt/locator. No retrieval failure is treated as verified evidence.
 - Product identities and marketing ranges are not underwriting criteria. Fifth Third and Zions offers that could not be verified in the research pass were omitted rather than guessed; lender identities with no verified products remain visible.
 - No background/scheduled research, automatic lender applications, bureau pulls, owner rule approval, client publication, or public deployment was added.
+
+## Section 04 — Underwriting engine, rule coverage and conditional financial questions
+
+**State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified.
+
+### Implemented and verified
+
+- Added `goal_questionnaire_answers` with per-goal numeric/text values, explicit `answered`/`unknown`/`skipped` state, financial-source provenance, staff-only verification, author timestamps, immutable goal/client linkage, audit triggers, and active-assignment/client RLS. Unknown and skipped values remain null; explicit zero is preserved.
+- Added goal-specific conditional question UI to staff and client goal views. Active rules determine relevant questions through a narrow authenticated definition function that returns only question metadata, never lender/product/source/threshold/client records. Every row has “I don’t know / Skip for now”; client edits reset staff verification.
+- Legacy client-global financial answers are no longer matching inputs. Personal goals use their own goal answers, business goals use only the selected business plus goal answers, and custom product input keys never fall back to another relationship or business.
+- Expanded deterministic coverage for exact bureau/model scores (including equivalent FICO 08/FICO 8 spelling without version swaps), inquiry lookbacks, DTI, tradelines, utilization, bankruptcy, late payments, delinquencies, collections, charge-offs, existing-product age, membership age, direct deposit, business age/revenue, banking/deposit history, ownership, income, and cited allowed-state lists.
+- Added rule `input_key`, `text_threshold`, `application_mode`, and `requires_verified_facts` metadata to direct proposals and owner source review in migrations `0027`–`0029`. Existing Prosper Note Channel candidates were backfilled only on the new scope fields: six individual-only criteria and one joint note. All 13 remain pending.
+- Self-reported evidence is labeled separately from verified evidence. Verification-required conditions remain Unknown until staff verification. Joint applications receive no suitability score and remain Needs Review unless an explicitly joint-scoped rule exists.
+- Strict mode remains verified-primary-only. Expanded secondary/observational signals cannot automatically disqualify; a secondary failure now always forces review rather than appearing as a potential match.
+- Added mismatch explanations, improvement/review checklists, source links/dates, stale/effective handling, and explicit product-level APR/amount assumptions. Suitability remains 0–100 relative fit, never approval probability; no automatic publication.
+
+### Acceptance results — 2026-11-17
+
+- **96/96 application tests passed across 12 files.** Tests cover model/bureau swaps, FICO 08 aliases, unknown/zero, verified vs self-reported inputs, custom input isolation, DTI, inquiry windows, derogatories, location, joint scope, secondary signals, and improvement explanations.
+- **TypeScript check and production build passed.** Existing dependency deprecation/bundling warnings remain non-blocking.
+- **11/11 transaction-isolated synthetic database checks passed** for own/cross-client visibility and writes, client self-verification attempts, verification reset on edit, Skip/null, explicit zero, author audit, immutable goal linkage, and application-mode validation. Two read-only checks confirmed owner-only review and narrow question metadata.
+- **Synthetic owner Chromium workflow passed:** created a DEMO client and personal goal, saved unverified and verified joint answers, exercised Skip, restored a verified answer, and evaluated 24 personal-scope products. Every result was Needs Review with null score because no rules are active; the joint warning rendered; zero console errors occurred; nothing published. No separate employee/client browser session was used in this section.
+- **Basic security scan completed with no issues found.** This was not deep code analysis or production certification.
+- Cleanup/readback found **0 clients, 0 goal answers, 0 match runs, 0 published snapshots, 0 active rules, and 13 pending source candidates**. No files or real client data were used.
+
+### Documented limits
+
+Undisclosed lender calculations and unsupported joint variations intentionally remain Needs Review rather than inferred rules. Existing candidate thresholds, representability, review status, and sources were not changed; no owner approval or rule activation occurred. No external capability is blocked for this section.

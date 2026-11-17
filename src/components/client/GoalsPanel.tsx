@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { fmtMoney } from "@/lib/labels";
 import { BusinessProfilesPanel } from "@/components/client/BusinessProfilesPanel";
+import { GoalQuestionsPanel } from "@/components/client/GoalQuestionsPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,10 +32,13 @@ export function GoalsPanel({ clientId, staff }: { clientId: string; staff: boole
 
   return <div className="space-y-4">
     <BusinessProfilesPanel clientId={clientId} staff={staff} onChanged={refresh} />
-    <Card><CardHeader><CardTitle className="label-caps">Funding goals</CardTitle><p className="text-sm text-muted-foreground">Personal goals stay separate. Every business goal explicitly reuses a chosen business profile; one business can have many independent goals.</p></CardHeader><CardContent className="space-y-4">
+    <Card><CardHeader><CardTitle className="label-caps">Funding goals</CardTitle><p className="text-sm text-muted-foreground">Personal goals stay separate. Every business goal explicitly reuses a chosen business profile; one business can have many independent goals and goal-specific answers.</p></CardHeader><CardContent className="space-y-4">
       <div className="flex flex-wrap gap-2"><Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All goal types</SelectItem><SelectItem value="personal">Personal goals</SelectItem><SelectItem value="business">Business goals</SelectItem></SelectContent></Select><Select value={businessFilter} onValueChange={setBusinessFilter}><SelectTrigger className="w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All businesses</SelectItem>{businesses.map((business) => <SelectItem key={business.id} value={business.id}>{business.name}</SelectItem>)}</SelectContent></Select></div>
       {visible.length === 0 && <p className="rounded border border-dashed p-4 text-sm text-muted-foreground">No goals match this view.</p>}
-      <div className="space-y-2">{visible.map((goal) => editingId === goal.id ? <GoalForm key={goal.id} clientId={clientId} businesses={businesses} existing={goal} onDone={() => { setEditingId(""); refresh(); }} onCancel={() => setEditingId("")} /> : <div key={goal.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-3 text-sm"><div><div className="font-medium">{goal.title}</div><div className="text-xs capitalize text-muted-foreground">{goal.goal_type}{goal.business_profile_id ? ` · ${businessName(goal.business_profile_id)}` : ""}</div></div><div className="flex items-center gap-3"><div className="font-semibold">{goal.target_amount == null ? "Amount unknown" : fmtMoney(goal.target_amount)}</div><Button size="sm" variant="ghost" onClick={() => setEditingId(goal.id)}><Pencil className="mr-1 h-4 w-4" />Edit</Button></div></div>)}</div>
+      <div className="space-y-2">{visible.map((goal) => editingId === goal.id ? <GoalForm key={goal.id} clientId={clientId} businesses={businesses} existing={goal} onDone={() => { setEditingId(""); refresh(); }} onCancel={() => setEditingId("")} /> : <div key={goal.id} className="rounded border p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="font-medium">{goal.title}</div><div className="text-xs capitalize text-muted-foreground">{goal.goal_type}{goal.business_profile_id ? ` · ${businessName(goal.business_profile_id)}` : ""}</div></div><div className="flex items-center gap-3"><div className="font-semibold">{goal.target_amount == null ? "Amount unknown" : fmtMoney(goal.target_amount)}</div><Button size="sm" variant="ghost" onClick={() => setEditingId(goal.id)}><Pencil className="mr-1 h-4 w-4" />Edit</Button></div></div>
+        <details className="mt-3 border-t pt-3"><summary className="cursor-pointer text-xs font-medium text-primary">Goal-specific conditional questions</summary><GoalQuestionsPanel clientId={clientId} goalId={goal.id} goalType={goal.goal_type as "personal" | "business"} staff={staff} /></details>
+      </div>)}</div>
       <div className="border-t pt-4"><GoalForm clientId={clientId} businesses={businesses} onDone={refresh} /></div>
     </CardContent></Card>
   </div>;

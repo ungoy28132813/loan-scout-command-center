@@ -14,6 +14,8 @@ export interface BusinessFinancialProfile {
   months_in_business: number | null;
   formation_date: string | null;
   verification_status: string;
+  financial_source?: string;
+  location_state?: string | null;
 }
 
 export function productBelongsToGoal(productType: string, goalType: GoalType): boolean {

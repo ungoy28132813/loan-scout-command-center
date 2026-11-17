@@ -28,6 +28,7 @@ export function CandidateRow({ c, productLabel, isOwner, onDone }: { c: Candidat
         <StatusBadge value={c.representable ? "verified" : "unknown"} label={c.representable ? "engine can check" : "note only — not enforced"} />
       </span>
     </div>
+    {c.representable && <div className="mt-1 text-xs text-muted-foreground">Engine scope: {c.application_mode} applications{c.input_key ? ` · goal/business input ${c.input_key}` : ""}{c.requires_verified_facts ? " · staff-verified facts required" : ""}{c.rule_key === "allowed_states" ? ` · states ${c.text_threshold ?? "Unknown"}` : ""}</div>}
     {!c.representable && c.not_enforced_reason && <div className="mt-1 text-xs text-muted-foreground">Why not enforced: {c.not_enforced_reason}</div>}
     <div className="mt-1 text-xs text-muted-foreground">Source: <a href={c.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">{c.source_title}<ExternalLink className="h-3 w-3" /></a>{c.source_locator ? ` · ${c.source_locator}` : ""} · public source checked {c.verified_on}{c.effective_date ? ` · effective ${c.effective_date}` : ""}{c.version_label ? ` · version ${c.version_label}` : ""} · {c.evidence_status.replace(/_/g, " ")}{isStale(c.verified_on, c.stale_after_days) && <b> · stale; recheck required</b>}</div>
     {c.source_excerpt && <details className="mt-2"><summary className="cursor-pointer text-xs font-medium">Source excerpt</summary><div className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-xs">{c.source_excerpt}</div></details>}
