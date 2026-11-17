@@ -21,7 +21,7 @@ const POSTURE: [string, string, boolean][] = [
   ["Encryption", "Data is encrypted in transit (HTTPS) and at rest by Lovable Cloud's managed storage and database.", true],
   ["Append-only audit log", "Database triggers record who changed what (field names only, no sensitive values).", true],
   ["Owner-only permanent deletion", "Only the owner can delete documents and reports.", true],
-  ["Passwordless sign-in", "Email one-time links. No passwords stored.", true],
+  ["Sign-in", "Email one-time links, or an optional password each user sets for themselves (leaked passwords rejected). No public password signup.", true],
   ["Passkeys", "Not implemented yet.", false],
   ["Forced remote sign-out of a user", "Not implemented yet — deactivation blocks all data access immediately instead.", false],
   ["Automated PDF extraction", "Not implemented — staff enter data from the source PDF.", false],

@@ -12,9 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
     { title: "Sign in — Loan Scout Matching Tool" },
-    { name: "description", content: "Passwordless sign-in for Loan Scout LLC team members and clients." },
+    { name: "description", content: "Email-link or password sign-in for Loan Scout LLC team members and clients." },
     { property: "og:title", content: "Sign in — Loan Scout Matching Tool" },
-    { property: "og:description", content: "Passwordless sign-in for Loan Scout LLC." },
+    { property: "og:description", content: "Email-link or password sign-in for Loan Scout LLC." },
   ] }),
   component: AuthPage,
 });
@@ -25,6 +25,8 @@ function AuthPage() {
   const [agree, setAgree] = useState(false);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pw, setPw] = useState("");
+  const [usePw, setUsePw] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { if (data.user) navigate({ to: "/dashboard", replace: true }); });
@@ -35,7 +37,13 @@ function AuthPage() {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/auth` } });
+    if (usePw) {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
+      setBusy(false);
+      if (error) return void toast.error("Email or password is incorrect.");
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/auth`, shouldCreateUser: true } });
     setBusy(false);
     if (error) return void toast.error(error.message);
     setSent(true);
@@ -68,11 +76,18 @@ function AuthPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
+              {usePw && (
+                <div className="space-y-2">
+                  <Label htmlFor="pw">Password</Label>
+                  <Input id="pw" type="password" required autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+                </div>
+              )}
               <label className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Checkbox checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} className="mt-0.5" />
                 <span>I have read the privacy notice below. Access is monitored and logged for security.</span>
               </label>
-              <Button type="submit" className="w-full" disabled={!agree || busy}>{busy ? "Sending…" : "Email me a sign-in link"}</Button>
+              <Button type="submit" className="w-full" disabled={!agree || busy}>{busy ? "Please wait…" : usePw ? "Sign in" : "Email me a sign-in link"}</Button>
+              <Button type="button" variant="link" className="w-full" onClick={() => setUsePw((v) => !v)}>{usePw ? "Email me a link instead" : "Sign in with a password"}</Button>
               <Button type="button" variant="outline" className="w-full" disabled title="Passkeys are not available yet">
                 <KeyRound className="mr-2 h-4 w-4" /> Passkey — not yet available
               </Button>

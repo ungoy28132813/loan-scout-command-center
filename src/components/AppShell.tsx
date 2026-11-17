@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
-import { LayoutDashboard, Users, Landmark, ShieldCheck, UserCog, Map, LogOut, Moon, Sun, Menu } from "lucide-react";
+import { LayoutDashboard, Users, Landmark, ShieldCheck, UserCog, Map, LogOut, Moon, Sun, Menu, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMe } from "@/lib/use-me";
 import { Logo } from "@/components/brand/Logo";
@@ -38,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/lenders", label: "Lenders", icon: Landmark, show: staff },
     { to: "/team", label: "Team & Access", icon: UserCog, show: me?.primary === "owner" },
     { to: "/security", label: "Security Center", icon: ShieldCheck, show: me?.primary === "owner" },
+    { to: "/account", label: "My account", icon: KeyRound, show: true },
     { to: "/roadmap", label: "Roadmap", icon: Map, show: staff },
   ].filter((n) => n.show);
 
