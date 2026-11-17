@@ -48,7 +48,7 @@ function Team() {
         {q.data.profiles.map((p) => <EmployeeCard key={p.id} p={p} perm={q.data!.perms.find((x) => x.user_id === p.id)} clients={q.data!.assigns.filter((a) => a.employee_id === p.id).length} others={active.filter((o) => o.id !== p.id)} onDone={refresh} />)}
       </div>
       <Card className="mt-4"><CardHeader><CardTitle className="label-caps">Invitations</CardTitle></CardHeader><CardContent>
-        <ul className="divide-y text-sm">{q.data.invites.map((i) => <li key={i.id} className="flex items-center justify-between py-2"><span>{i.email} · {i.role}</span><span className="flex items-center gap-2">{i.accepted_at ? <StatusBadge value="active" label={`accepted ${fmtDate(i.accepted_at)}`} /> : <><StatusBadge value="pending" /><Button size="sm" variant="ghost" onClick={async () => { await supabase.from("invitations").delete().eq("id", i.id); refresh(); }}>Revoke</Button></>}</span></li>)}</ul>
+        <ul className="divide-y text-sm">{q.data.invites.map((i) => <li key={i.id} className="flex items-center justify-between py-2"><span>{i.email} · {i.role}</span><span className="flex items-center gap-2">{i.accepted_at ? <StatusBadge value="active" label={`accepted ${fmtDate(i.accepted_at)}`} /> : <><StatusBadge value="pending" /><Button size="sm" variant="ghost" onClick={async () => { const { error } = await supabase.from("invitations").delete().eq("id", i.id); if (error) toast.error(error.message); else { toast.success("Invitation revoked"); refresh(); } }}>Revoke</Button></>}</span></li>)}</ul>
       </CardContent></Card>
     </div>
   );
@@ -69,19 +69,14 @@ function EmployeeCard({ p, perm, clients, others, onDone }: { p: { id: string; e
     ensure(patch);
   };
   const deactivate = async () => {
-    const { data: assigns } = await supabase.from("client_assignments").select("id, client_id").eq("employee_id", p.id).eq("active", true);
-    for (const a of assigns ?? []) {
-      await supabase.from("client_assignments").update({ active: false }).eq("id", a.id);
-      if (target) await supabase.from("client_assignments").insert({ client_id: a.client_id, employee_id: target });
-    }
-    const { error } = await supabase.from("profiles").update({ active: false }).eq("id", p.id);
+    const { error } = await supabase.rpc("deactivate_employee", { _employee_id: p.id, ...(target ? { _transfer_to: target } : {}) });
     if (error) return void toast.error(error.message);
     toast.success(`Access revoked${target ? " and clients transferred" : ""}.`); onDone();
   };
   return <Card className={p.active ? "" : "opacity-60"}>
     <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
       <div><CardTitle className="text-base">{p.full_name ?? p.email}</CardTitle><div className="text-xs text-muted-foreground">{p.email} · {clients} assigned clients</div></div>
-      {p.active ? <StatusBadge value="active" /> : <><StatusBadge value="denied" label="deactivated" /><Button size="sm" variant="outline" onClick={async () => { await supabase.from("profiles").update({ active: true }).eq("id", p.id); onDone(); }}>Reactivate</Button></>}
+      {p.active ? <StatusBadge value="active" /> : <><StatusBadge value="denied" label="deactivated" /><Button size="sm" variant="outline" onClick={async () => { const { error } = await supabase.from("profiles").update({ active: true }).eq("id", p.id); if (error) toast.error(error.message); else { toast.success("Access reactivated"); onDone(); } }}>Reactivate</Button></>}
     </CardHeader>
     {p.active && <CardContent className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -94,7 +89,7 @@ function EmployeeCard({ p, perm, clients, others, onDone }: { p: { id: string; e
         <span className="text-sm">Employee departure:</span>
         <Select value={target} onValueChange={setTarget}><SelectTrigger className="w-60"><SelectValue placeholder="Transfer clients to… (optional)" /></SelectTrigger><SelectContent>{others.map((o) => <SelectItem key={o.id} value={o.id}>{o.email}</SelectItem>)}</SelectContent></Select>
         <Button size="sm" variant="destructive" onClick={deactivate}>Revoke access</Button>
-        <p className="w-full text-xs text-muted-foreground">All data access is blocked immediately by server permission checks. Their sign-in token expires on its own shortly after; forced remote sign-out is not built yet.</p>
+        <p className="w-full text-xs text-muted-foreground">Client data and assignment access are blocked immediately by server permission checks. Existing auth tokens may remain valid until expiry; owner-targeted remote sign-out is unavailable.</p>
       </div>
     </CardContent>}
   </Card>;

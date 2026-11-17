@@ -1660,8 +1660,16 @@ export type Database = {
         Args: { _cid: string; _uid: string }
         Returns: boolean
       }
+      can_read_profile: {
+        Args: { _profile: string; _viewer: string }
+        Returns: boolean
+      }
       client_mark_task: {
         Args: { _note: string; _task: string }
+        Returns: undefined
+      }
+      deactivate_employee: {
+        Args: { _employee_id: string; _transfer_to?: string }
         Returns: undefined
       }
       grant_roles_on_confirm: {

@@ -22,4 +22,11 @@ union all select 'confirmation trigger not callable by anon', not has_function_p
 union all select 'confirmation trigger not callable by authenticated', not has_function_privilege('authenticated','public.handle_user_confirmed()','execute')
 union all select 'publication guard not callable by authenticated', not has_function_privilege('authenticated','public.guard_publication()','execute')
 union all select 'report guard not callable by authenticated', not has_function_privilege('authenticated','public.guard_credit_report()','execute')
-union all select 'profile guard not callable by authenticated', not has_function_privilege('authenticated','public.guard_profile_self_update()','execute');
+union all select 'profile guard not callable by authenticated', not has_function_privilege('authenticated','public.guard_profile_self_update()','execute')
+union all select 'assignment guard not callable by authenticated', not has_function_privilege('authenticated','public.guard_client_assignment()','execute')
+union all select 'profile privacy helper not callable by anon', not has_function_privilege('anon','public.can_read_profile(uuid,uuid)','execute')
+union all select 'permission helper avoids dynamic SQL', pg_get_functiondef('public.has_perm(uuid,text)'::regprocedure) not like '%execute format%'
+union all select 'consent helper requires current version', pg_get_functiondef('public.has_client_consent(uuid,uuid)'::regprocedure) like '%2026-11-v1%'
+union all select 'consent audit includes version', pg_get_functiondef('public.audit_trigger()'::regprocedure) like '%accepted_at%'
+union all select 'employee departure function checks owner', pg_get_functiondef('public.deactivate_employee(uuid,uuid)'::regprocedure) like '%Only the owner can revoke employee access%'
+union all select 'employee departure function not callable by anon', not has_function_privilege('anon','public.deactivate_employee(uuid,uuid)','execute');

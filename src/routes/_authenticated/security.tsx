@@ -22,9 +22,11 @@ const POSTURE: [string, string, boolean][] = [
   ["Encryption", "Data is encrypted in transit (HTTPS) and at rest by Lovable Cloud's managed storage and database.", true],
   ["Append-only audit log", "Database triggers record who changed what (field names only, no sensitive values).", true],
   ["Owner-only permanent deletion", "Only the owner can delete documents and reports.", true],
-  ["Sign-in", "Email one-time links and email/password account creation are available. New accounts have no access until invited, unless public client sign-up is explicitly enabled. Existing users can also set their own password; known leaked passwords are rejected.", true],
-  ["Passkeys", "Not implemented yet.", false],
-  ["Forced remote sign-out of a user", "Not implemented yet — deactivation blocks all data access immediately instead.", false],
+  ["Sign-in", "Email one-time links, email/password account creation, and email recovery are available. New accounts have no access until invited, unless public client sign-up is explicitly enabled. Password changes require the current password; known leaked passwords are rejected.", true],
+  ["Passkeys", "Real WebAuthn registration and sign-in are capability-gated. The live authentication service currently reports passkeys disabled, so no passkey option is offered as working.", false],
+  ["Forced remote sign-out of a user", "Owner-targeted token revocation is unavailable through the managed auth API. Deactivation immediately blocks client data and assignment access; existing tokens may remain valid until expiry.", false],
+  ["Profile and assignment privacy", "Employees can read only their own profile and profiles for actively assigned clients. Deactivated employees lose assignment visibility. Departure revocation and optional transfer are one owner-only audited action.", true],
+  ["Current consent", "Client uploads and structured extraction staging require both current authorizations. Consent kind, version and acceptance time are audited without report contents.", true],
   ["Automated PDF extraction", "Text-layer PDFs are read locally in the authorized client or staff browser. Client reads stay unverified and outside matching until staff import and accept them. Scanned reports still need OCR or manual entry.", true],
 ];
 

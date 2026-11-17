@@ -41,7 +41,7 @@ exception when others then insert into client_extraction_results values ('client
 end $$;
 
 insert into public.consents (user_id, client_id, kind, version)
-select id, '11000000-0000-4000-8000-000000000001', kind, 'regression' from public.profiles, lateral (values ('privacy_notice'),('report_analysis_authorization')) kinds(kind) where email='support@advancerevival.com';
+select id, '11000000-0000-4000-8000-000000000001', kind, '2026-11-v1' from public.profiles, lateral (values ('privacy_notice'),('report_analysis_authorization')) kinds(kind) where email='support@advancerevival.com';
 
 do $$
 begin

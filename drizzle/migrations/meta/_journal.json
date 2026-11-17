@@ -120,6 +120,34 @@
       "when": 1794883016268,
       "tag": "0016_business_verification_change_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794883786349,
+      "tag": "0017_harden_identity_consent_and_assignment_boundaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794883819035,
+      "tag": "0018_atomic_employee_access_revocation",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794884037306,
+      "tag": "0019_allow_confirmed_invitation_portal_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794884215480,
+      "tag": "0020_fix_employee_revocation_operation_order",
+      "breakpoints": true
     }
   ]
 }

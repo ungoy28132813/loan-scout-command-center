@@ -1,4 +1,8 @@
 # Roadmap
+## Build queue — current
+- [x] Section 01: security, identity, consent; audit and test owner/employee/client boundaries
+- [x] Section 01: safely available fixes, acceptance results, blockers, verification and cleanup (docs/BUILD_QUEUE.md)
+- [ ] Sections 02–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
 ## Phase 1 — open
 - [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
 - [x] Automated credit-report PDF extraction — browser-local, text-layer PDFs, best effort
