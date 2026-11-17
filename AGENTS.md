@@ -28,3 +28,12 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules (Loan Scout Matching Tool)
+- Access control lives in the database (RLS + security-definer helpers `is_owner`, `is_client_staff`, `is_client_self`, `has_perm`); UI permission checks are cosmetic only. Why: sensitive credit data must be server-enforced.
+- Client documents go to the private `client-documents` bucket under `{client_id}/…`, viewed only via short-lived signed URLs; only the owner may delete. Why: no public links to reports.
+- Auditing is done by the `audit_trigger` on every app table, recording field names only (no values). Why: complete audit trail without PII in logs.
+- Matching is the pure deterministic module `src/lib/match-engine.ts` (tested); it evaluates only owner-approved rules with provenance, unknown never disqualifies, estimates never fail. Why: honesty and reproducibility.
+- Clients only ever see `published_snapshots` with status `published`; snapshots are immutable after publish and require an active assignment (DB trigger). Why: human review before any client visibility.
+- First account ever created becomes owner; afterwards roles come only from owner invitations (or public signup toggle → unassigned client). Why: no self-granted privileges.
+- The logo slot is `src/components/brand/Logo.tsx`; never generate or imitate the Loan Scout logo.
