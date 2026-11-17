@@ -27,6 +27,8 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [pw, setPw] = useState("");
   const [usePw, setUsePw] = useState(false);
+  const [signup, setSignup] = useState(false);
+  const [pw2, setPw2] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { if (data.user) navigate({ to: "/dashboard", replace: true }); });
@@ -37,6 +39,15 @@ function AuthPage() {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    if (signup) {
+      if (pw.length < 12) { setBusy(false); return void toast.error("Use at least 12 characters."); }
+      if (pw !== pw2) { setBusy(false); return void toast.error("Passwords don't match."); }
+      const { error } = await supabase.auth.signUp({ email: email.trim(), password: pw, options: { emailRedirectTo: `${window.location.origin}/auth` } });
+      setBusy(false);
+      if (error) return void toast.error(error.message);
+      setSent(true);
+      return;
+    }
     if (usePw) {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
       setBusy(false);
@@ -62,12 +73,12 @@ function AuthPage() {
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="mb-8 md:hidden"><Logo /></div>
-          <h1 className="font-display text-4xl">Sign in</h1>
+          <h1 className="font-display text-4xl">{signup ? "Create account" : "Sign in"}</h1>
           {sent ? (
             <div className="mt-6 rounded-lg border bg-card p-5">
               <Mail className="h-5 w-5 text-primary" />
               <p className="mt-3 font-medium">Check your email</p>
-              <p className="mt-1 text-sm text-muted-foreground">If {email} is eligible, a sign-in link is on its way. Open it on this device.</p>
+              <p className="mt-1 text-sm text-muted-foreground">If {email} is eligible, a link is on its way. Open it on this device to finish.</p>
               <Button variant="link" className="px-0" onClick={() => setSent(false)}>Use a different email</Button>
             </div>
           ) : (
@@ -76,18 +87,26 @@ function AuthPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              {usePw && (
+              {(usePw || signup) && (
                 <div className="space-y-2">
                   <Label htmlFor="pw">Password</Label>
-                  <Input id="pw" type="password" required autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+                  <Input id="pw" type="password" required autoComplete={signup ? "new-password" : "current-password"} value={pw} onChange={(e) => setPw(e.target.value)} />
+                </div>
+              )}
+              {signup && (
+                <div className="space-y-2">
+                  <Label htmlFor="pw2">Confirm password</Label>
+                  <Input id="pw2" type="password" required autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">At least 12 characters. New accounts get access only after email confirmation and an invitation from Loan Scout.</p>
                 </div>
               )}
               <label className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Checkbox checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} className="mt-0.5" />
                 <span>I have read the privacy notice below. Access is monitored and logged for security.</span>
               </label>
-              <Button type="submit" className="w-full" disabled={!agree || busy}>{busy ? "Please wait…" : usePw ? "Sign in" : "Email me a sign-in link"}</Button>
-              <Button type="button" variant="link" className="w-full" onClick={() => setUsePw((v) => !v)}>{usePw ? "Email me a link instead" : "Sign in with a password"}</Button>
+              <Button type="submit" className="w-full" disabled={!agree || busy}>{busy ? "Please wait…" : signup ? "Create account" : usePw ? "Sign in" : "Email me a sign-in link"}</Button>
+              {!signup && <Button type="button" variant="link" className="w-full" onClick={() => setUsePw((v) => !v)}>{usePw ? "Email me a link instead" : "Sign in with a password"}</Button>}
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setSignup((v) => !v)}>{signup ? "Already have an account? Sign in" : "New here? Create an account"}</Button>
               <Button type="button" variant="outline" className="w-full" disabled title="Passkeys are not available yet">
                 <KeyRound className="mr-2 h-4 w-4" /> Passkey — not yet available
               </Button>
