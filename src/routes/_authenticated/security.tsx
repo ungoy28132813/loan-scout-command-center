@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OrphanFileCleanup } from "@/components/security/OrphanFileCleanup";
 
 export const Route = createFileRoute("/_authenticated/security")({
   head: () => ({ meta: [{ title: "Security Center — Loan Scout Matching Tool" }, { name: "description", content: "Audit logs and access settings." }, { property: "og:title", content: "Security Center — Loan Scout" }, { property: "og:description", content: "Audit logs and access settings." }] }),
@@ -41,7 +42,7 @@ function Security() {
   const set = async (patch: Record<string, unknown>) => { const { error } = await supabase.from("app_settings").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", 1); if (error) toast.error(error.message); else qc.invalidateQueries({ queryKey: ["settings"] }); };
   const who = (id: string | null) => actors.data?.find((a) => a.id === id)?.email ?? (id ? "unknown user" : "system");
   const rows = (logs.data ?? []).filter((l) => !filter || `${l.action} ${l.entity} ${who(l.actor_id)}`.toLowerCase().includes(filter.toLowerCase()));
-  const entities = ["all", "documents", "clients", "client_assignments", "employee_permissions", "report_fields", "field_corrections", "match_results", "published_snapshots", "applications", "lender_rules", "readiness_tasks", "app_settings", "profiles", "consents"];
+  const entities = ["all", "documents", "orphan_storage_object", "clients", "client_assignments", "employee_permissions", "report_fields", "field_corrections", "match_results", "published_snapshots", "applications", "lender_rules", "readiness_tasks", "app_settings", "profiles", "consents"];
   return (
     <div>
       <PageHeader title="Security Center" kicker="Owner" />
@@ -53,6 +54,7 @@ function Security() {
         </CardContent></Card>
         <Card><CardHeader><CardTitle className="label-caps">Security posture</CardTitle></CardHeader><CardContent><ul className="space-y-2 text-sm">{POSTURE.map(([t, d, ok]) => <li key={t} className="flex gap-2"><span className={ok ? "text-primary" : "text-muted-foreground"}>{ok ? "✓" : "○"}</span><span><b>{t}</b> — <span className="text-muted-foreground">{d}</span></span></li>)}</ul></CardContent></Card>
       </div>
+      <div className="mt-4"><OrphanFileCleanup /></div>
       <Card className="mt-4"><CardHeader><CardTitle className="label-caps">Audit log</CardTitle>
         <div className="flex flex-wrap gap-2"><Input placeholder="Filter by action, user…" className="w-64" value={filter} onChange={(e) => setFilter(e.target.value)} />
           <Select value={entity} onValueChange={setEntity}><SelectTrigger className="w-56"><SelectValue /></SelectTrigger><SelectContent>{entities.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select></div></CardHeader>

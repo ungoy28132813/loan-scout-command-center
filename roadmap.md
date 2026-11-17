@@ -16,4 +16,6 @@
 - [x] Production-readiness pass: internal function privileges and rollback-only role/RLS regression checks
 - [x] Production-readiness pass: synthetic owner workflow through publication and cleanup
 - [ ] Temporary-account browser role tests (waiting on test-user creation approval; SQL role simulations passed)
+- [x] Persist live profile email/activation/department safeguard and regression tests
+- [x] Owner-only orphaned private test-file inventory and safe cleanup (known synthetic orphan deleted)
 ## Phase 2 / 3 — see /roadmap page in app
