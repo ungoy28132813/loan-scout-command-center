@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StatusBadge } from "@/components/StatusBadge";
+import { extractStoredReport, saveExtraction } from "@/lib/credit-report-parser/save";
+import { PdfReadError } from "@/lib/credit-report-parser/pdf";
 
 const BUREAUS = ["experian", "equifax", "transunion"] as const;
 const STATUSES = ["awaiting_manual_entry", "partial", "unreadable", "clearer_pdf_requested", "complete_unverified", "verified"];
@@ -20,7 +22,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
   const canEdit = me.perms.can_edit_extractions;
   const q = useQuery({ queryKey: ["reports", clientId], queryFn: async () => {
     const [r, f, c, t] = await Promise.all([
-      supabase.from("credit_reports").select("*, documents(file_name)").eq("client_id", clientId).order("created_at", { ascending: false }),
+      supabase.from("credit_reports").select("*, documents(file_name, storage_path)").eq("client_id", clientId).order("created_at", { ascending: false }),
       supabase.from("report_fields").select("*").eq("client_id", clientId),
       supabase.from("field_corrections").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
       supabase.from("tradelines").select("*").eq("client_id", clientId),
@@ -44,7 +46,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
 
   return (
     <div className="space-y-4">
-      <Alert><AlertDescription>Automated PDF extraction is <b>not implemented</b> in Phase 1. Values below are entered by staff from the source PDF; every change after the first entry requires a reason and is audited. Anything not entered stays <b>Unknown</b>.</AlertDescription></Alert>
+      <Alert><AlertDescription>Automatic reading works on text-based PDFs only and runs <b>inside your browser</b>; nothing is sent to an AI service. It is best effort: values it reads are marked <b>auto</b>, and anything flagged <b>review</b> is left out of matching until staff confirm it. Corrections need a reason and are audited. Anything not read stays <b>Unknown</b>. Nothing is ever marked verified automatically.</AlertDescription></Alert>
       {q.data.reports.length === 0 ? <Card><CardContent className="p-6 text-sm text-muted-foreground">No credit reports uploaded. Upload a PDF under Documents → Credit Reports.</CardContent></Card> : <>
         <div className="flex flex-wrap gap-2">{q.data.reports.map((r) => (
           <Button key={r.id} size="sm" variant={r.id === report?.id ? "default" : "outline"} onClick={() => setSel(r.id)}>
@@ -61,6 +63,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              <AutoExtract report={report} clientId={clientId} canEdit={canEdit} hasData={q.data.fields.some((f) => f.report_id === report.id) || q.data.tradelines.some((t) => t.report_id === report.id)} onDone={refresh} />
               <FieldGrid report={report} fields={q.data.fields.filter((f) => f.report_id === report.id)} canEdit={canEdit} clientId={clientId} onSaved={refresh} />
               <Tradelines report={report} all={q.data.tradelines} canEdit={canEdit} clientId={clientId} onSaved={refresh} />
             </CardContent>
@@ -85,7 +88,42 @@ function ReportMeta({ report, onSaved }: { report: { id: string; report_type: st
   </div>;
 }
 
-type Field = { id: string; bureau: string; field_key: string; score_model: string | null; value: number | null; status: string; source_ref: string | null };
+type Field = { id: string; bureau: string; field_key: string; score_model: string | null; value: number | null; status: string; source_ref: string | null; needs_review?: boolean; confidence?: string | null; source_page?: number | null; score_date?: string | null };
+
+function Flags({ f }: { f?: Field | undefined }) {
+  if (!f) return null;
+  return <>
+    {f.status === "extracted" && <span className="ml-1 text-[0.6rem] text-muted-foreground" title={f.source_ref ?? ""}>auto{f.source_page ? ` p${f.source_page}` : ""}{f.confidence ? ` · ${f.confidence}` : ""}</span>}
+    {f.needs_review && <span className="ml-1 text-[0.6rem] font-semibold text-warning">review</span>}
+  </>;
+}
+
+function AutoExtract({ report, clientId, canEdit, hasData, onDone }: { report: { id: string; extraction_method: string; extraction_summary: unknown; documents: unknown }; clientId: string; canEdit: boolean; hasData: boolean; onDone: () => void }) {
+  const [state, setState] = useState<string | null>(null);
+  const summary = report.extraction_summary as { pages?: number; bureaus?: string[]; scores?: number; fields?: number; tradelines?: number; needs_review?: number; warnings?: string[] } | null;
+  const run = async () => {
+    const path = (report.documents as { storage_path?: string } | null)?.storage_path;
+    if (!path) return void toast.error("Stored file not found");
+    setState("Opening private file…");
+    try {
+      const r = await extractStoredReport(path, (d, t) => setState(`Reading page ${d} of ${t}…`));
+      const saved = await saveExtraction(report.id, clientId, r);
+      if (!saved.ok) toast.error(saved.error); else toast.success("Report read — check values flagged for review, then re-run matching");
+    } catch (e) { toast.error(e instanceof PdfReadError ? e.message : "The PDF could not be read"); }
+    setState(null); onDone();
+  };
+  return <div className="space-y-2">
+    {summary && <div className="rounded border p-3 text-sm">
+      <div className="label-caps mb-1 text-muted-foreground">Automatic read summary</div>
+      <div>{summary.pages ?? "?"} page(s) · bureaus found: {summary.bureaus?.length ? summary.bureaus.join(", ") : "none"} · {summary.scores ?? 0} score(s), {summary.fields ?? 0} field(s), {summary.tradelines ?? 0} account entr{summary.tradelines === 1 ? "y" : "ies"} · <span className={summary.needs_review ? "font-semibold text-warning" : ""}>{summary.needs_review ?? 0} need review</span></div>
+      {!!summary.warnings?.length && <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground">{summary.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+    </div>}
+    {canEdit && report.extraction_method !== "automated" && !hasData && <div className="flex flex-wrap items-center gap-3">
+      <Button size="sm" variant="secondary" onClick={run} disabled={!!state}>{state ?? "Read this PDF automatically"}</Button>
+      <span className="text-xs text-muted-foreground">Text-based PDFs only (SmartCredit, IdentityIQ, MyScoreIQ and similar, best effort). Read in this browser.</span>
+    </div>}
+  </div>;
+}
 
 function FieldGrid({ report, fields, canEdit, clientId, onSaved }: { report: { id: string; report_type: string }; fields: Field[]; canEdit: boolean; clientId: string; onSaved: () => void }) {
   const bureaus = report.report_type === "tri_merge" || report.report_type === "unknown" ? BUREAUS : [report.report_type as (typeof BUREAUS)[number]];
@@ -97,6 +135,7 @@ function FieldGrid({ report, fields, canEdit, clientId, onSaved }: { report: { i
     return <button disabled={!canEdit} onClick={() => setEdit({ bureau: b, key: k, model: m, existing: f })} className="w-full rounded px-2 py-1 text-left hover:bg-muted disabled:hover:bg-transparent">
       {f?.value != null ? <span className="font-medium">{f.value}</span> : <span className="text-muted-foreground">Unknown</span>}
       {f?.status === "corrected" && <span className="ml-1 text-[0.6rem] text-warning">corrected</span>}
+      <Flags f={f} />
     </button>;
   };
   const scores = fields.filter((f) => f.field_key === "score");
@@ -105,7 +144,7 @@ function FieldGrid({ report, fields, canEdit, clientId, onSaved }: { report: { i
       <div>
         <div className="label-caps mb-2 text-muted-foreground">Scores (bureau + model kept separate — never interchangeable)</div>
         <div className="flex flex-wrap gap-2">{scores.length === 0 && <span className="text-sm text-muted-foreground">No scores entered.</span>}
-          {scores.map((s) => <button key={s.id} disabled={!canEdit} onClick={() => setEdit({ bureau: s.bureau, key: "score", model: s.score_model, existing: s })} className="rounded border px-3 py-2 text-left text-sm"><div className="label-caps text-[0.6rem] text-muted-foreground">{s.bureau} · {s.score_model}</div><div className="font-display text-2xl">{s.value ?? "Unknown"}</div></button>)}</div>
+          {scores.map((s) => <button key={s.id} disabled={!canEdit} onClick={() => setEdit({ bureau: s.bureau, key: "score", model: s.score_model, existing: s })} className="rounded border px-3 py-2 text-left text-sm"><div className="label-caps text-[0.6rem] text-muted-foreground">{s.bureau} · {s.score_model ?? "Model not stated"}</div><div className="font-display text-2xl">{s.value ?? "Unknown"}</div><div>{s.score_date && <span className="text-[0.6rem] text-muted-foreground">as of {fmtDate(s.score_date)}</span>}<Flags f={s} /></div></button>)}</div>
         {canEdit && <div className="mt-2 flex flex-wrap gap-2">
           <Select value={scoreB} onValueChange={setScoreB}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{bureaus.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
           <Select value={scoreM} onValueChange={setScoreM}><SelectTrigger className="w-52"><SelectValue /></SelectTrigger><SelectContent>{SCORE_MODELS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
@@ -130,11 +169,11 @@ function EditField({ edit, reportId, clientId, onClose, onSaved }: { edit: { bur
   const save = async () => {
     const v = val.trim() === "" ? null : Number(val);
     if (v != null && Number.isNaN(v)) return void toast.error("Enter a number, or leave empty for Unknown");
-    if (isCorrection && reason.trim().length < 5) return void toast.error("A reason is required for corrections");
+    if (isCorrection && v !== edit.existing?.value && reason.trim().length < 5) return void toast.error("A reason is required for corrections");
     if (edit.existing) {
-      const { error } = await supabase.from("report_fields").update({ value: v, status: isCorrection ? "corrected" : v == null ? "unknown" : "entered", source_ref: src || null, updated_at: new Date().toISOString() }).eq("id", edit.existing.id);
+      const { error } = await supabase.from("report_fields").update({ value: v, status: isCorrection && v !== edit.existing.value ? "corrected" : v == null ? "unknown" : edit.existing.status === "extracted" ? "extracted" : "entered", needs_review: false, source_ref: src || null, updated_at: new Date().toISOString() }).eq("id", edit.existing.id);
       if (error) return void toast.error(error.message);
-      if (isCorrection) await supabase.from("field_corrections").insert({ field_id: edit.existing.id, client_id: clientId, old_value: edit.existing.value, new_value: v, reason: reason.slice(0, 500), source_ref: src || null });
+      if (isCorrection && v !== edit.existing.value) await supabase.from("field_corrections").insert({ field_id: edit.existing.id, client_id: clientId, old_value: edit.existing.value, new_value: v, reason: reason.slice(0, 500), source_ref: src || null });
     } else {
       const { error } = await supabase.from("report_fields").insert({ report_id: reportId, client_id: clientId, bureau: edit.bureau, field_key: edit.key, score_model: edit.model, value: v, status: v == null ? "unknown" : "entered", source_ref: src || null });
       if (error) return void toast.error(error.message);
@@ -144,11 +183,12 @@ function EditField({ edit, reportId, clientId, onClose, onSaved }: { edit: { bur
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{edit.bureau} · {edit.model ?? edit.key.replace(/_/g, " ")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{edit.bureau} · {edit.key === "score" ? (edit.model ?? "score — model not stated") : edit.key.replace(/_/g, " ")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Input placeholder="Value (empty = Unknown)" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} />
           <Input placeholder="Source reference (e.g. PDF page 3)" value={src} onChange={(e) => setSrc(e.target.value)} />
-          {isCorrection && <Input placeholder="Reason for correction (required)" value={reason} onChange={(e) => setReason(e.target.value)} />}
+          {edit.existing?.needs_review && <p className="text-xs text-warning">Read automatically and flagged for review{edit.existing.source_page ? ` (page ${edit.existing.source_page})` : ""}. Check it against the PDF; saving an unchanged value confirms it.</p>}
+          {isCorrection && <Input placeholder="Reason for correction (required if changed)" value={reason} onChange={(e) => setReason(e.target.value)} />}
         </div>
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={save}>Save</Button></DialogFooter>
       </DialogContent>
@@ -156,7 +196,7 @@ function EditField({ edit, reportId, clientId, onClose, onSaved }: { edit: { bur
   );
 }
 
-type TL = { id: string; report_id: string; bureau: string; creditor: string; account_type: string | null; account_ref_last4: string | null; balance: number | null; credit_limit: number | null; is_open: boolean | null; late_count: number | null; is_collection: boolean; reconcile_key: string | null };
+type TL = { id: string; report_id: string; bureau: string; creditor: string; account_type: string | null; account_ref_last4: string | null; balance: number | null; credit_limit: number | null; is_open: boolean | null; late_count: number | null; is_collection: boolean; reconcile_key: string | null; extracted?: boolean; needs_review?: boolean };
 
 function Tradelines({ report, all, canEdit, clientId, onSaved }: { report: { id: string; report_type: string }; all: TL[]; canEdit: boolean; clientId: string; onSaved: () => void }) {
   const [f, setF] = useState({ bureau: report.report_type === "tri_merge" || report.report_type === "unknown" ? "experian" : report.report_type, creditor: "", last4: "", type: "revolving", balance: "", limit: "", open: "yes", late: "", collection: "no" });
@@ -175,7 +215,7 @@ function Tradelines({ report, all, canEdit, clientId, onSaved }: { report: { id:
       <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
         <thead><tr className="text-left text-muted-foreground"><th className="p-2">Account</th><th className="p-2">Bureaus reporting</th><th className="p-2">Balance / limit per bureau</th><th className="p-2">Lates</th><th className="p-2">Flags</th></tr></thead>
         <tbody className="divide-y">{[...groups.values()].map((g) => <tr key={g[0]!.id}>
-          <td className="p-2 font-medium">{g[0]!.creditor}{g[0]!.account_ref_last4 ? ` ··${g[0]!.account_ref_last4}` : ""}<div className="text-xs text-muted-foreground">{g[0]!.account_type}</div></td>
+          <td className="p-2 font-medium">{g[0]!.creditor}{g[0]!.account_ref_last4 ? ` ··${g[0]!.account_ref_last4}` : ""}<div className="text-xs text-muted-foreground">{g[0]!.account_type ?? "type unknown"}{g.some((t) => t.extracted) && " · auto"}{g.some((t) => t.needs_review) && <span className="font-semibold text-warning"> · review</span>}</div></td>
           <td className="p-2">{g.map((t) => t.bureau).join(", ")}</td>
           <td className="p-2 text-xs">{g.map((t) => <div key={t.id}>{t.bureau}: {t.balance ?? "?"} / {t.credit_limit ?? "?"}</div>)}</td>
           <td className="p-2 text-xs">{g.map((t) => <div key={t.id}>{t.bureau}: {t.late_count ?? "Unknown"}</div>)}</td>

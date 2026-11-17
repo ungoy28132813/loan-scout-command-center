@@ -323,9 +323,12 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
+          detected_provider: string | null
           document_id: string
+          extracted_at: string | null
           extraction_method: string
           extraction_status: string
+          extraction_summary: Json | null
           id: string
           report_date: string | null
           report_type: string
@@ -333,9 +336,12 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          detected_provider?: string | null
           document_id: string
+          extracted_at?: string | null
           extraction_method?: string
           extraction_status?: string
+          extraction_summary?: Json | null
           id?: string
           report_date?: string | null
           report_type?: string
@@ -343,9 +349,12 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          detected_provider?: string | null
           document_id?: string
+          extracted_at?: string | null
           extraction_method?: string
           extraction_status?: string
+          extraction_summary?: Json | null
           id?: string
           report_date?: string | null
           report_type?: string
@@ -1108,10 +1117,14 @@ export type Database = {
         Row: {
           bureau: string
           client_id: string
+          confidence: string | null
           field_key: string
           id: string
+          needs_review: boolean
           report_id: string
+          score_date: string | null
           score_model: string | null
+          source_page: number | null
           source_ref: string | null
           status: string
           updated_at: string
@@ -1120,10 +1133,14 @@ export type Database = {
         Insert: {
           bureau: string
           client_id: string
+          confidence?: string | null
           field_key: string
           id?: string
+          needs_review?: boolean
           report_id: string
+          score_date?: string | null
           score_model?: string | null
+          source_page?: number | null
           source_ref?: string | null
           status?: string
           updated_at?: string
@@ -1132,10 +1149,14 @@ export type Database = {
         Update: {
           bureau?: string
           client_id?: string
+          confidence?: string | null
           field_key?: string
           id?: string
+          needs_review?: boolean
           report_id?: string
+          score_date?: string | null
           score_model?: string | null
+          source_page?: number | null
           source_ref?: string | null
           status?: string
           updated_at?: string
@@ -1216,12 +1237,15 @@ export type Database = {
           created_at: string
           credit_limit: number | null
           creditor: string
+          extracted: boolean
           id: string
           is_collection: boolean
           is_open: boolean | null
           late_count: number | null
+          needs_review: boolean
           reconcile_key: string | null
           report_id: string
+          source_page: number | null
         }
         Insert: {
           account_ref_last4?: string | null
@@ -1232,12 +1256,15 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           creditor: string
+          extracted?: boolean
           id?: string
           is_collection?: boolean
           is_open?: boolean | null
           late_count?: number | null
+          needs_review?: boolean
           reconcile_key?: string | null
           report_id: string
+          source_page?: number | null
         }
         Update: {
           account_ref_last4?: string | null
@@ -1248,12 +1275,15 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           creditor?: string
+          extracted?: boolean
           id?: string
           is_collection?: boolean
           is_open?: boolean | null
           late_count?: number | null
+          needs_review?: boolean
           reconcile_key?: string | null
           report_id?: string
+          source_page?: number | null
         }
         Relationships: [
           {

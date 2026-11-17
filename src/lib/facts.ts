@@ -5,7 +5,7 @@ import type { Bureau, Facts } from "@/lib/match-engine";
 export async function loadFacts(clientId: string): Promise<Facts> {
   const [reports, fields, answers] = await Promise.all([
     supabase.from("credit_reports").select("id, extraction_status, report_date, created_at").eq("client_id", clientId),
-    supabase.from("report_fields").select("report_id, bureau, field_key, score_model, value").eq("client_id", clientId),
+    supabase.from("report_fields").select("report_id, bureau, field_key, score_model, value, needs_review").eq("client_id", clientId),
     supabase.from("questionnaire_answers").select("question_key, value_numeric, status").eq("client_id", clientId),
   ]);
   const reps = reports.data ?? [];
@@ -14,6 +14,7 @@ export async function loadFacts(clientId: string): Promise<Facts> {
   const bureau: Facts["bureau"] = {};
   const scoreMap = new Map<string, { bureau: Bureau; model: string; value: number | null }>();
   for (const f of sorted) {
+    if (f.needs_review) continue; // unconfirmed automated values never feed matching
     const b = f.bureau as Bureau;
     if (f.field_key === "score" && f.score_model) scoreMap.set(`${b}|${f.score_model}`, { bureau: b, model: f.score_model, value: f.value });
     else { bureau[b] = bureau[b] ?? {}; bureau[b]![f.field_key] = f.value; }
@@ -26,5 +27,6 @@ export async function loadFacts(clientId: string): Promise<Facts> {
     if (r.extraction_status === "unreadable" || r.extraction_status === "clearer_pdf_requested") criticalWarnings.push("A report is unreadable — clearer PDF requested.");
     if (r.extraction_status === "awaiting_manual_entry") criticalWarnings.push("A report has not had its data entered yet.");
   }
+  if ((fields.data ?? []).some((f) => f.needs_review)) criticalWarnings.push("Some automatically read report values still need staff review and were not used.");
   return { scores: [...scoreMap.values()], bureau, answers: ans, criticalWarnings: [...new Set(criticalWarnings)] };
 }

@@ -39,3 +39,5 @@ use the editor.
 - The official logo is `public/loan-scout-approved-logo.webp`, rendered only via `src/components/brand/Logo.tsx` on a white holder; never generate, redraw or imitate it.
 - Owner bootstrap: only a confirmed email in the private `owner_bootstrap_allowlist` table becomes owner, and only while no owner exists (single-owner unique index). All roles are granted on email confirmation via `grant_roles_on_confirm`. Why: prevents first-signup ownership takeover.
 - Security regression checks live in `tests/sql/owner_bootstrap_regression.sql`; run them with a read query after any auth/role change.
+- Credit-report PDF reading runs only in the staff browser (`src/lib/credit-report-parser/`, pdf.js with a locally bundled worker); clients' uploads wait for staff, who need `can_edit_extractions`. Why: no report text leaves the browser and RLS is unchanged.
+- The parser saves only structured values with page/confidence and `needs_review`; models are never inferred, unknown stays null, status is never set to verified automatically, and `needs_review` values are excluded from matching facts. Why: partial reads must not pass as verified.

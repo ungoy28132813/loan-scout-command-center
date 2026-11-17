@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FileText, Trash2, Eye, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { extractFile, saveExtraction } from "@/lib/credit-report-parser/save";
+import { PdfReadError } from "@/lib/credit-report-parser/pdf";
 import type { Me } from "@/lib/use-me";
 import { DOC_CATEGORIES, fmtDate } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,9 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
   const [reportType, setReportType] = useState<string>("unknown");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ name: string; state: string; tone: "info" | "ok" | "warn" | "error" }[]>([]);
+  const canExtract = (me.primary === "owner" || me.primary === "employee") && me.perms.can_edit_extractions;
+  const setP = (i: number, state: string, tone: "info" | "ok" | "warn" | "error") => setProgress((p) => p.map((x, k) => (k === i ? { ...x, state, tone } : x)));
   const docs = useQuery({
     queryKey: ["documents", clientId],
     queryFn: async () => (await supabase.from("documents").select("*").eq("client_id", clientId).order("created_at", { ascending: false })).data ?? [],
@@ -27,23 +32,40 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
     if (!files.length) return;
     const bad = files.filter((f) => (category === "credit_reports" ? f.type !== "application/pdf" : !ALLOWED.includes(f.type)));
     if (bad.length) return void toast.error(category === "credit_reports" ? "Credit reports must be PDF files." : "Only PDF, JPG or PNG files are accepted.");
+    if (files.some((f) => f.size > 25 * 1024 * 1024)) return void toast.error("Each file must be 25 MB or smaller.");
     setBusy(true);
+    setProgress(files.map((f) => ({ name: f.name.slice(0, 80), state: "Uploading…", tone: "info" as const })));
     const batch = crypto.randomUUID();
     let ok = 0;
-    for (const f of files) {
+    for (const [i, f] of files.entries()) {
       const ext = f.type === "application/pdf" ? "pdf" : f.type === "image/png" ? "png" : "jpg";
       const path = `${clientId}/${crypto.randomUUID()}.${ext}`;
       const up = await supabase.storage.from("client-documents").upload(path, f, { contentType: f.type, upsert: false });
-      if (up.error) { toast.error(`Upload failed for ${f.name}`); continue; }
+      if (up.error) { setP(i, "Upload failed", "error"); continue; }
       const { data: doc, error } = await supabase.from("documents").insert({ client_id: clientId, category, storage_path: path, file_name: f.name.slice(0, 200), mime_type: f.type, size_bytes: f.size, batch_id: batch, uploaded_by: me.id }).select("id").single();
-      if (error || !doc) { toast.error(`Could not record ${f.name}`); continue; }
+      if (error || !doc) { setP(i, "Could not record file", "error"); continue; }
       if (category === "credit_reports") {
-        await supabase.from("credit_reports").insert({ client_id: clientId, document_id: doc.id, report_type: reportType });
-      }
+        const { data: rep } = await supabase.from("credit_reports").insert({ client_id: clientId, document_id: doc.id, report_type: reportType }).select("id").single();
+        if (!canExtract || !rep) setP(i, "Received securely — our team will review it", "ok");
+        else {
+          setP(i, "Reading PDF in this browser…", "info");
+          try {
+            const r = await extractFile(await f.arrayBuffer(), (d, t) => setP(i, `Reading page ${d} of ${t}…`, "info"));
+            const saved = await saveExtraction(rep.id, clientId, r);
+            if (!saved.ok) setP(i, `Uploaded; automatic read not saved: ${saved.error}`, "warn");
+            else if (r.status === "unreadable") setP(i, "Uploaded; no text layer detected — needs OCR or a clearer report", "warn");
+            else if (r.status === "awaiting_manual_entry") setP(i, "Uploaded; nothing could be read reliably — enter manually", "warn");
+            else setP(i, `Uploaded; read ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} — review in Reports`, r.status === "partial" ? "warn" : "ok");
+          } catch (e) {
+            setP(i, `Uploaded; automatic read failed: ${e instanceof PdfReadError ? e.message : "the PDF could not be read"}`, "warn");
+          }
+        }
+      } else setP(i, "Uploaded securely", "ok");
       ok++;
     }
     setBusy(false); setFiles([]);
     toast.success(`${ok} of ${files.length} file(s) uploaded securely`);
+    qc.invalidateQueries({ queryKey: ["facts", clientId] });
     qc.invalidateQueries({ queryKey: ["documents", clientId] });
     qc.invalidateQueries({ queryKey: ["reports", clientId] });
   };
@@ -91,9 +113,14 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
               </div>
               <input type="file" multiple accept={category === "credit_reports" ? "application/pdf" : "application/pdf,image/jpeg,image/png"} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-secondary-foreground" />
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? "PDF only." : "PDF, JPG or PNG."} Max 25 MB each. Stored privately; never publicly linkable.</p>
+                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? (canExtract ? "PDF only. Text is read inside this browser — never sent to an AI service." : "PDF only.") : "PDF, JPG or PNG."} Max 25 MB each. Stored privately; never publicly linkable.</p>
                 <Button onClick={upload} disabled={!files.length || busy}><Upload className="mr-2 h-4 w-4" />{busy ? "Uploading…" : `Upload ${files.length || ""}`}</Button>
               </div>
+              {progress.length > 0 && <ul aria-live="polite" className="divide-y rounded border text-sm">{progress.map((p, k) => (
+                <li key={k} className="flex flex-wrap items-center justify-between gap-2 p-2">
+                  <span className="min-w-0 truncate">{p.name}</span>
+                  <span className={p.tone === "error" ? "text-destructive" : p.tone === "warn" ? "text-warning" : p.tone === "ok" ? "text-primary" : "text-muted-foreground"}>{p.state}</span>
+                </li>))}</ul>}
             </>}
           </CardContent>
         </Card>

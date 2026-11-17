@@ -50,6 +50,13 @@
       "when": 1794879319060,
       "tag": "0006_require_client_consent_for_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794879633127,
+      "tag": "0007_automated_extraction_evidence",
+      "breakpoints": true
     }
   ]
 }
