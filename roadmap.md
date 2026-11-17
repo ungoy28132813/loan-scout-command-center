@@ -24,4 +24,7 @@
 - [x] Phase 2 revolving utilization/paydown simulator with conservative account reconciliation
 - [x] Phase 2 synthetic unit and browser verification with cleanup
 - [ ] Lender-specific simulation from hypothetical utilization (not built; utilization math only)
+- [ ] Phase 2 multi-business profiles, independent goals, and verified-state financial inputs
+- [ ] Goal/business-specific matching facts and product scope
+- [ ] Multi-business security, unit, and synthetic browser verification with cleanup
 ## Phase 2 / 3 — see /roadmap page in app

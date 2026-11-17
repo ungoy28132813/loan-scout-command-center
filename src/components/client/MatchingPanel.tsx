@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Me } from "@/lib/use-me";
 import { evaluateProduct, ENGINE_VERSION, type Rule, type Condition } from "@/lib/match-engine";
 import { loadFacts } from "@/lib/facts";
+import { productBelongsToGoal, scopeProductsToGoal, type GoalType } from "@/lib/business-funding";
 import { MATCH_STATUS_LABEL, fmtDate, fmtMoney } from "@/lib/labels";
 import { DISCLAIMER, type SnapshotItem } from "@/components/client/PublishedStrategy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,42 +21,55 @@ import { StatusBadge } from "@/components/StatusBadge";
 export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
   const qc = useQueryClient();
   const [mode, setMode] = useState<"strict" | "expanded">("strict");
+  const [goalId, setGoalId] = useState("");
+  const [includeOutsideScope, setIncludeOutsideScope] = useState(false);
   const [busy, setBusy] = useState(false);
-  const q = useQuery({ queryKey: ["matching", clientId], queryFn: async () => {
-    const runs = (await supabase.from("match_runs").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(1)).data ?? [];
+  const q = useQuery({ queryKey: ["matching", clientId, goalId || "no-goal"], queryFn: async () => {
+    const runs = goalId ? (await supabase.from("match_runs").select("*").eq("client_id", clientId).eq("goal_id", goalId).order("created_at", { ascending: false }).limit(1)).data ?? [] : [];
     const run = runs[0] ?? null;
-    const [results, products, snaps, active] = await Promise.all([
+    const [results, products, snaps, active, goals, businesses] = await Promise.all([
       run ? supabase.from("match_results").select("*").eq("run_id", run.id).order("rank") : Promise.resolve({ data: [] as never[] }),
       supabase.from("lender_products").select("*, lenders(name)"),
       supabase.from("published_snapshots").select("*").eq("client_id", clientId).order("version", { ascending: false }),
       supabase.from("lender_rules").select("id", { count: "exact", head: true }).eq("approval_status", "active"),
+      supabase.from("funding_goals").select("*").eq("client_id", clientId).order("created_at"),
+      supabase.from("business_profiles").select("id, name").eq("client_id", clientId),
     ]);
-    return { run, results: results.data ?? [], products: products.data ?? [], snaps: snaps.data ?? [], activeRules: active.count ?? 0 };
+    return { run, results: results.data ?? [], products: products.data ?? [], snaps: snaps.data ?? [], activeRules: active.count ?? 0, goals: goals.data ?? [], businesses: businesses.data ?? [] };
   } });
   const refresh = () => qc.invalidateQueries({ queryKey: ["matching", clientId] });
 
   const run = async () => {
+    const selectedGoal = q.data?.goals.find((goal) => goal.id === goalId);
+    if (!selectedGoal) return void toast.error("Choose the exact personal or business goal first");
     setBusy(true);
     try {
       const [facts, prods, rules] = await Promise.all([
-        loadFacts(clientId),
-        supabase.from("lender_products").select("id"),
+        loadFacts(clientId, goalId),
+        supabase.from("lender_products").select("id, product_type"),
         supabase.from("lender_rules").select("*").eq("approval_status", "active"),
       ]);
-      if (!prods.data?.length) { refresh(); return; }
-      const { data: runRow, error } = await supabase.from("match_runs").insert({ client_id: clientId, mode, engine_version: ENGINE_VERSION, critical_warnings: facts.criticalWarnings }).select("id").single();
+      const scopedProducts = scopeProductsToGoal(prods.data ?? [], selectedGoal.goal_type as GoalType, includeOutsideScope);
+      if (!scopedProducts.length) { toast.error("No products exist in this goal's scope"); refresh(); return; }
+      const warnings = [...facts.criticalWarnings];
+      if (includeOutsideScope) warnings.push("Staff explicitly included products outside the selected goal's personal/business scope; these require manual review.");
+      const { data: runRow, error } = await supabase.from("match_runs").insert({ client_id: clientId, goal_id: goalId, mode, engine_version: ENGINE_VERSION, critical_warnings: warnings }).select("id").single();
       if (error || !runRow) { toast.error(error?.message ?? "Run failed"); return; }
-      const evals = prods.data.map((p) => ({ p, e: evaluateProduct((rules.data ?? []).filter((r) => r.product_id === p.id) as unknown as Rule[], facts, mode) }));
+      const evals = scopedProducts.map((p) => ({ p, e: evaluateProduct((rules.data ?? []).filter((r) => r.product_id === p.id) as unknown as Rule[], facts, mode) }));
       evals.sort((a, b) => (b.e.score ?? -1) - (a.e.score ?? -1));
       const rows = evals.map(({ p, e }, i) => ({ run_id: runRow.id, client_id: clientId, product_id: p.id, status: e.status, suitability_score: e.score, conditions: { list: e.conditions, summary: e.summary, steps: e.improvement_steps } as never, rank: i + 1 }));
       const ins = await supabase.from("match_results").insert(rows);
       if (ins.error) toast.error(ins.error.message); else toast.success(`Evaluated ${rows.length} products (${mode} mode). Nothing is published until you approve.`);
       refresh();
-    } finally { setBusy(false); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Run failed"); }
+    finally { setBusy(false); }
   };
 
   if (!q.data) return null;
   const { results, products, snaps } = q.data;
+  const selectedGoal = q.data.goals.find((goal) => goal.id === goalId);
+  const selectedBusiness = q.data.businesses.find((business) => business.id === selectedGoal?.business_profile_id);
+  const goalLabel = selectedGoal ? `${selectedGoal.title}${selectedBusiness ? ` · ${selectedBusiness.name}` : " · Personal"}` : "";
   if (products.length === 0 && results.length === 0) {
     return (
       <Card>
@@ -89,11 +103,15 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">Deterministic evaluation against owner-approved, cited lender rules only. The suitability index (0–100) is relative fit — <b>not</b> approval probability. Unknown evidence never disqualifies.</p>
           {q.data.activeRules === 0 && <p className="rounded border border-gold p-2 text-sm">No lender criteria have been approved by the owner yet. Products have published information only, so every result will be <b>Needs Review</b> with no score. Review sources under Lender Intelligence.</p>}
-          {me.perms.can_run_matching ? <div className="flex flex-wrap items-center gap-2">
-            <Select value={mode} onValueChange={(v) => setMode(v as "strict" | "expanded")}><SelectTrigger className="w-64"><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value="strict">Strict — verified primary sources only</SelectItem>
-              <SelectItem value="expanded">Expanded — include marked estimates</SelectItem></SelectContent></Select>
-            <Button onClick={run} disabled={busy}><Play className="mr-2 h-4 w-4" />{busy ? "Running…" : "Run matching"}</Button>
+          {me.perms.can_run_matching ? <div className="space-y-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <div><label className="mb-1 block text-xs font-medium" htmlFor="match-goal">Goal and financial scope</label><Select value={goalId} onValueChange={(value) => { setGoalId(value); setIncludeOutsideScope(false); }}><SelectTrigger id="match-goal" className="w-80"><SelectValue placeholder="Choose a goal — no default" /></SelectTrigger><SelectContent>{q.data.goals.map((goal) => { const business = q.data.businesses.find((item) => item.id === goal.business_profile_id); return <SelectItem key={goal.id} value={goal.id}>{goal.title} — {goal.goal_type === "business" ? business?.name ?? "Business unavailable" : "Personal"}</SelectItem>; })}</SelectContent></Select></div>
+              <Select value={mode} onValueChange={(v) => setMode(v as "strict" | "expanded")}><SelectTrigger className="w-64"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="strict">Strict — verified primary sources only</SelectItem><SelectItem value="expanded">Expanded — include marked estimates</SelectItem></SelectContent></Select>
+              <Button onClick={run} disabled={busy || !goalId}><Play className="mr-2 h-4 w-4" />{busy ? "Running…" : "Run matching"}</Button>
+            </div>
+            {q.data.goals.length === 0 && <p className="text-sm text-muted-foreground">Create a personal or business-linked goal before running matching.</p>}
+            {selectedGoal && <div className="rounded border p-3 text-xs"><b>Scope:</b> {goalLabel}. {selectedGoal.goal_type === "business" ? "Only this business's financials and business products are used." : "Only personal answers and personal products are used."} Personal credit report evidence is loaded separately.</div>}
+            {selectedGoal && <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={includeOutsideScope} onChange={(event) => setIncludeOutsideScope(event.target.checked)} /><span><b>Staff override:</b> include products outside this goal's personal/business scope. Warning: these results are manually reviewable and are not automatic eligibility decisions.</span></label>}
           </div> : <p className="text-muted-foreground">You don't have the "Run matching" permission.</p>}
           {q.data.run && <div className="text-xs text-muted-foreground">Last run {fmtDate(q.data.run.created_at)} · {q.data.run.mode} · {q.data.run.engine_version}</div>}
           {q.data.run && (q.data.run.critical_warnings as string[]).length > 0 && <Alert variant="destructive"><AlertDescription>Critical evidence warnings: {(q.data.run.critical_warnings as string[]).join(" ")}</AlertDescription></Alert>}
@@ -135,11 +153,11 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
               </div>
             );
           })}
-          {canReview && q.data.run && <ManualAdd runId={q.data.run.id} clientId={clientId} products={products.filter((p) => !results.some((r) => r.product_id === p.id))} onDone={refresh} />}
+          {canReview && q.data.run && selectedGoal && <ManualAdd runId={q.data.run.id} clientId={clientId} products={products.filter((p) => (includeOutsideScope || productBelongsToGoal(p.product_type, selectedGoal.goal_type as GoalType)) && !results.some((r) => r.product_id === p.id))} onDone={refresh} />}
         </CardContent>
       </Card>}
 
-      {canReview && results.some((r) => r.review_status === "approved") && <PublishBuilder clientId={clientId} results={results.filter((r) => r.review_status === "approved")} prod={prod} nextVersion={(snaps[0]?.version ?? 0) + 1} onDone={refresh} />}
+      {canReview && results.some((r) => r.review_status === "approved") && <PublishBuilder clientId={clientId} goalLabel={goalLabel} results={results.filter((r) => r.review_status === "approved")} prod={prod} nextVersion={(snaps[0]?.version ?? 0) + 1} onDone={refresh} />}
 
       <Card><CardHeader><CardTitle className="label-caps">Publication history</CardTitle></CardHeader><CardContent>
         {snaps.length === 0 ? <p className="text-sm text-muted-foreground">Nothing published. Clients see nothing until a staff member publishes.</p> :
@@ -188,7 +206,7 @@ function ManualAdd({ runId, clientId, products, onDone }: { runId: string; clien
 
 type Res = { id: string; product_id: string; status: string; suitability_score: number | null; conditions: unknown; rank: number | null };
 
-function PublishBuilder({ clientId, results, prod, nextVersion, onDone }: { clientId: string; results: Res[]; prod: (id: string) => { name: string; lenders: unknown; product_type: string; official_url: string | null; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string } | undefined; nextVersion: number; onDone: () => void }) {
+function PublishBuilder({ clientId, goalLabel, results, prod, nextVersion, onDone }: { clientId: string; goalLabel: string; results: Res[]; prod: (id: string) => { name: string; lenders: unknown; product_type: string; official_url: string | null; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string } | undefined; nextVersion: number; onDone: () => void }) {
   const [picked, setPicked] = useState<string[]>(results.map((r) => r.id));
   const [extra, setExtra] = useState<Record<string, { summary: string; checklist: string; docs: string }>>({});
   const [when, setWhen] = useState("");
@@ -203,11 +221,11 @@ function PublishBuilder({ clientId, results, prod, nextVersion, onDone }: { clie
   const save = async (status: "draft" | "scheduled") => {
     if (!picked.length) return void toast.error("Select at least one approved item");
     if (status === "scheduled" && !when) return void toast.error("Pick a date");
-    const { error } = await supabase.from("published_snapshots").insert({ client_id: clientId, version: nextVersion, scope: picked.length === 1 ? "individual" : picked.length === results.length ? "strategy" : "group", status, content: { items: build(), disclaimer: DISCLAIMER } as never, scheduled_for: status === "scheduled" ? new Date(when).toISOString() : null });
+    const { error } = await supabase.from("published_snapshots").insert({ client_id: clientId, version: nextVersion, scope: picked.length === 1 ? "individual" : picked.length === results.length ? "strategy" : "group", status, content: { items: build(), disclaimer: DISCLAIMER, goal: goalLabel } as never, scheduled_for: status === "scheduled" ? new Date(when).toISOString() : null });
     if (error) toast.error(error.message); else { toast.success(status === "draft" ? "Draft saved — use Publish now in history when ready" : "Saved as scheduled — release it from history on that date"); onDone(); }
   };
   return <Card className="border-primary">
-    <CardHeader><CardTitle className="label-caps">Publish builder — version {nextVersion}</CardTitle><p className="text-sm text-muted-foreground">Only approved items appear. Private notes, rejected options and internal comments are never included.</p></CardHeader>
+    <CardHeader><CardTitle className="label-caps">Publish builder — version {nextVersion} · {goalLabel}</CardTitle><p className="text-sm text-muted-foreground">Only approved items appear. Private notes, rejected options and internal comments are never included.</p></CardHeader>
     <CardContent className="space-y-3">
       {results.map((r) => { const p = prod(r.product_id); const e = extra[r.id] ?? { summary: "", checklist: "", docs: "" }; const set = (k: string, v: string) => setExtra({ ...extra, [r.id]: { ...e, [k]: v } });
         return <div key={r.id} className="rounded border p-3">

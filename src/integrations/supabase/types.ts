@@ -160,34 +160,165 @@ export type Database = {
       business_profiles: {
         Row: {
           annual_revenue: number | null
+          average_monthly_deposits: number | null
+          banking_history_months: number | null
+          business_credit_model: string | null
+          business_credit_score: number | null
+          business_credit_source_url: string | null
+          business_credit_verified_on: string | null
           client_id: string
           created_at: string
+          existing_monthly_debt_payments: number | null
+          financial_source: string
+          formation_date: string | null
           id: string
+          industry: string | null
+          lifecycle_status: string
+          location_state: string | null
           monthly_expenses: number | null
+          monthly_net_cash_flow: number | null
+          monthly_revenue: number | null
           months_in_business: number | null
           name: string
+          owner_share_pct: number | null
+          source_note: string | null
+          updated_at: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           annual_revenue?: number | null
+          average_monthly_deposits?: number | null
+          banking_history_months?: number | null
+          business_credit_model?: string | null
+          business_credit_score?: number | null
+          business_credit_source_url?: string | null
+          business_credit_verified_on?: string | null
           client_id: string
           created_at?: string
+          existing_monthly_debt_payments?: number | null
+          financial_source?: string
+          formation_date?: string | null
           id?: string
+          industry?: string | null
+          lifecycle_status?: string
+          location_state?: string | null
           monthly_expenses?: number | null
+          monthly_net_cash_flow?: number | null
+          monthly_revenue?: number | null
           months_in_business?: number | null
           name: string
+          owner_share_pct?: number | null
+          source_note?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           annual_revenue?: number | null
+          average_monthly_deposits?: number | null
+          banking_history_months?: number | null
+          business_credit_model?: string | null
+          business_credit_score?: number | null
+          business_credit_source_url?: string | null
+          business_credit_verified_on?: string | null
           client_id?: string
           created_at?: string
+          existing_monthly_debt_payments?: number | null
+          financial_source?: string
+          formation_date?: string | null
           id?: string
+          industry?: string | null
+          lifecycle_status?: string
+          location_state?: string | null
           monthly_expenses?: number | null
+          monthly_net_cash_flow?: number | null
+          monthly_revenue?: number | null
           months_in_business?: number | null
           name?: string
+          owner_share_pct?: number | null
+          source_note?: string | null
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "business_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_profiles_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_questionnaire_answers: {
+        Row: {
+          answered_by: string | null
+          business_profile_id: string
+          client_id: string
+          financial_source: string
+          id: string
+          question_key: string
+          status: string
+          updated_at: string
+          value_numeric: number | null
+          value_text: string | null
+          verified: boolean
+        }
+        Insert: {
+          answered_by?: string | null
+          business_profile_id: string
+          client_id: string
+          financial_source?: string
+          id?: string
+          question_key: string
+          status?: string
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+          verified?: boolean
+        }
+        Update: {
+          answered_by?: string | null
+          business_profile_id?: string
+          client_id?: string
+          financial_source?: string
+          id?: string
+          question_key?: string
+          status?: string
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_questionnaire_answers_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_questionnaire_answers_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_questionnaire_answers_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"

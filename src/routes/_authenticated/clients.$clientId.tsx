@@ -49,7 +49,7 @@ function ClientFile() {
         </TabsList>
         <TabsContent value="docs"><DocumentsPanel clientId={clientId} me={me} canUpload={me.perms.can_upload_docs} /></TabsContent>
         <TabsContent value="reports"><ReportsPanel clientId={clientId} me={me} activeRuleCount={q.data.ruleKeys.length} onChanged={() => qc.invalidateQueries({ queryKey: ["matching", clientId] })} /></TabsContent>
-        <TabsContent value="goals"><div className="space-y-4"><GoalsPanel clientId={clientId} /><QuestionnairePanel clientId={clientId} ruleKeys={q.data.ruleKeys} staff /></div></TabsContent>
+        <TabsContent value="goals"><div className="space-y-4"><GoalsPanel clientId={clientId} staff /><QuestionnairePanel clientId={clientId} ruleKeys={q.data.ruleKeys} staff /></div></TabsContent>
         <TabsContent value="match"><MatchingPanel clientId={clientId} me={me} /></TabsContent>
         <TabsContent value="apps"><ApplicationsPanel clientId={clientId} me={me} /></TabsContent>
         <TabsContent value="ready"><ReadinessPanel clientId={clientId} me={me} /></TabsContent>

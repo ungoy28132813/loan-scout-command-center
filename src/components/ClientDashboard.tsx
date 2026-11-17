@@ -77,7 +77,7 @@ export function ClientDashboard({ me }: { me: Me }) {
             {d.ann.map((a) => <Card key={a.id}><CardContent className="p-5"><div className="flex justify-between"><div className="font-medium">{a.title}</div><span className="text-xs text-muted-foreground">{fmtDate(a.created_at)}</span></div>{a.kind === "document_request" && <div className="label-caps mt-1 text-primary">Document request</div>}<p className="mt-2 whitespace-pre-wrap text-sm">{a.body}</p></CardContent></Card>)}
             <p className="text-xs text-muted-foreground">Announcements are one-way; replies aren't supported in the portal.</p></div>
         </TabsContent>
-        <TabsContent value="goals"><div className="space-y-4"><GoalsPanel clientId={clientId} /><QuestionnairePanel clientId={clientId} ruleKeys={[]} staff={false} /></div></TabsContent>
+        <TabsContent value="goals"><div className="space-y-4"><GoalsPanel clientId={clientId} staff={false} /><QuestionnairePanel clientId={clientId} ruleKeys={[]} staff={false} /></div></TabsContent>
         <TabsContent value="docs"><DocumentsPanel clientId={clientId} me={me} canUpload consentOk={d.consentOk} /></TabsContent>
       </Tabs>
     </div>

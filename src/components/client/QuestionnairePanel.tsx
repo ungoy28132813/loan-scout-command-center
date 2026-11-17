@@ -24,11 +24,13 @@ export function QuestionnairePanel({ clientId, ruleKeys, staff, onChanged }: { c
   });
   if (!ctx.data) return null;
   const keys = staff ? ruleKeys : [...ruleKeys, "max_dti_pct"];
-  const qs = neededQuestions({ ruleKeys: keys, hasBusinessGoal: ctx.data.hasBusiness, hasReport: ctx.data.hasReport });
+  // Business financials are collected inside each business profile, never as client-global answers.
+  const personalRuleKeys = keys.filter((key) => !["min_months_in_business", "min_annual_revenue"].includes(key));
+  const qs = neededQuestions({ ruleKeys: personalRuleKeys, hasBusinessGoal: false, hasReport: ctx.data.hasReport });
   return (
     <Card>
       <CardHeader><CardTitle className="label-caps">Financial questions</CardTitle>
-        <p className="text-sm text-muted-foreground">Only questions relevant to the current goals, reports and cited lender requirements are shown. You can always choose “I don’t know / Skip for now”.</p>
+        <p className="text-sm text-muted-foreground">Only personal questions relevant to the current goals, reports and cited lender requirements are shown. Business financials belong inside each business profile. You can always choose “I don’t know / Skip for now”.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {qs.length === 0 && <p className="text-sm text-muted-foreground">No questions needed right now.</p>}
