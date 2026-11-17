@@ -32,7 +32,7 @@ describe("goal-scoped business facts", () => {
   });
 
   it("keeps personal goals separate from business finances", () => {
-    const answers = scopedGoalAnswers({ goalType: "personal", personalAnswers: { annual_income: 80000 }, business: profile("a", 200000) });
+    const answers = scopedGoalAnswers({ goalType: "personal", personalAnswers: { annual_income: 80000, annual_business_revenue: 200000 }, business: profile("a", 200000) });
     expect(answers).toEqual({ annual_income: 80000 });
   });
 

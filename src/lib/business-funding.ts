@@ -56,7 +56,10 @@ export function scopedGoalAnswers(input: {
   businessAnswers?: Record<string, number | null>;
   asOf?: Date;
 }): Record<string, number | null> {
-  if (input.goalType === "personal") return { ...input.personalAnswers };
+  if (input.goalType === "personal") {
+    const businessKeys = new Set(["annual_business_revenue", "months_in_business", "monthly_business_expenses", "monthly_business_revenue", "monthly_business_debt_payments", "average_monthly_deposits", "banking_history_months", "owner_share_pct", "business_cash_on_hand", "business_collateral_value"]);
+    return Object.fromEntries(Object.entries(input.personalAnswers).filter(([key]) => !businessKeys.has(key)));
+  }
   if (!input.business) return {};
   return { ...(input.businessAnswers ?? {}), ...businessCoreAnswers(input.business, input.asOf) };
 }
