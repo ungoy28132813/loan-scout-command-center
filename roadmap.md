@@ -4,7 +4,7 @@
 - [x] Automated credit-report PDF extraction — browser-local, text-layer PDFs, best effort
 - [ ] OCR for scanned/image-only reports (not built; flagged as unreadable)
 - [ ] Review-confirm action for automatically read accounts
-- [ ] Signed-in end-to-end upload test (blocked: test-user approval unavailable)
+- [x] Signed-in end-to-end upload test — owner session, DEMO client, synthetic 3-bureau PDF read in browser
 - [ ] Passkey sign-in
 - [ ] Forced remote sign-out on deactivation
 - [ ] Automatic release of scheduled publications
