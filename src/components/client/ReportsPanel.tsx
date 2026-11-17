@@ -17,6 +17,14 @@ import { PdfReadError } from "@/lib/credit-report-parser/pdf";
 const BUREAUS = ["experian", "equifax", "transunion"] as const;
 const STATUSES = ["awaiting_manual_entry", "partial", "unreadable", "clearer_pdf_requested", "complete_unverified", "verified"];
 
+function submissionCounts(payload: unknown) {
+  const p = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  return { scores: Array.isArray(p["scores"]) ? p["scores"].length : 0, fields: Array.isArray(p["fields"]) ? p["fields"].length : 0, tradelines: Array.isArray(p["tradelines"]) ? p["tradelines"].length : 0 };
+}
+function submissionStatus(payload: unknown) {
+  return payload && typeof payload === "object" && typeof (payload as Record<string, unknown>)["status"] === "string" ? String((payload as Record<string, unknown>)["status"]) : "unknown";
+}
+
 export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me: Me; onChanged: () => void }) {
   const qc = useQueryClient();
   const canEdit = me.perms.can_edit_extractions;
@@ -29,8 +37,30 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
     ]);
     return { reports: r.data ?? [], fields: f.data ?? [], corrections: c.data ?? [], tradelines: t.data ?? [] };
   } });
+  const submissions = useQuery({
+    queryKey: ["client-extraction-submissions", clientId],
+    queryFn: async () => (await supabase.from("client_extraction_submissions").select("id, report_id, review_status, payload, created_at").eq("client_id", clientId).order("created_at", { ascending: false })).data ?? [],
+  });
   const [sel, setSel] = useState<string | null>(null);
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["reports", clientId] }); onChanged(); };
+  const [submissionBusy, setSubmissionBusy] = useState<string | null>(null);
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["reports", clientId] });
+    qc.invalidateQueries({ queryKey: ["client-extraction-submissions", clientId] });
+    onChanged();
+  };
+  const importSubmission = async (id: string) => {
+    setSubmissionBusy(id);
+    const { error } = await supabase.rpc("import_client_extraction", { _submission_id: id });
+    if (error) toast.error(error.message); else toast.success("Imported once; every value remains unverified and outside matching.");
+    setSubmissionBusy(null); refresh();
+  };
+  const acceptSubmission = async (id: string) => {
+    if (!window.confirm("Accept this whole automatic read? Staff acceptance allows these values to feed matching. Client recommendations still require separate review and publication.")) return;
+    setSubmissionBusy(id);
+    const { error } = await supabase.rpc("accept_client_extraction", { _submission_id: id });
+    if (error) toast.error(error.message); else toast.success("Automatic read accepted. Re-run matching to use the confirmed facts.");
+    setSubmissionBusy(null); refresh();
+  };
   if (!q.data) return null;
   const report = q.data.reports.find((r) => r.id === (sel ?? q.data.reports[0]?.id));
 
@@ -47,6 +77,27 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
   return (
     <div className="space-y-4">
       <Alert><AlertDescription>Automatic reading works on text-based PDFs only and runs <b>inside your browser</b>; nothing is sent to an AI service. It is best effort: values it reads are marked <b>auto</b>, and anything flagged <b>review</b> is left out of matching until staff confirm it. Corrections need a reason and are audited. Anything not read stays <b>Unknown</b>. Nothing is ever marked verified automatically.</AlertDescription></Alert>
+      {!!submissions.data?.length && <Card>
+        <CardHeader><CardTitle className="label-caps">Client automatic reads</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">Clients can parse only their own consented PDFs locally. Import once, correct individual values if needed, or accept the whole read. Nothing enters matching before staff acceptance; publication remains a separate staff decision.</p>
+          {submissions.data.map((s) => {
+            const counts = submissionCounts(s.payload);
+            const linked = q.data.reports.find((r) => r.id === s.report_id);
+            const name = (linked?.documents as { file_name?: string } | null)?.file_name ?? "Credit report";
+            const unreadable = submissionStatus(s.payload) === "unreadable";
+            return <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-3 text-sm">
+              <div><div className="font-medium">{name}</div><div className="text-xs text-muted-foreground">{counts.scores} scores · {counts.fields} fields · {counts.tradelines} accounts · {s.review_status.replace(/_/g, " ")} · {fmtDate(s.created_at)}</div></div>
+              <div className="flex items-center gap-2">
+                <StatusBadge value={s.review_status === "accepted" ? "verified" : "pending"} label={s.review_status === "accepted" ? "staff accepted" : "unverified client-submitted"} />
+                {s.review_status === "pending_review" && <Button size="sm" variant="secondary" disabled={!canEdit || submissionBusy === s.id} onClick={() => importSubmission(s.id)}>Import for review</Button>}
+                {s.review_status === "imported" && !unreadable && <Button size="sm" disabled={!canEdit || submissionBusy === s.id} onClick={() => acceptSubmission(s.id)}>Accept all & use in matching</Button>}
+                {s.review_status === "imported" && unreadable && <span className="text-xs text-warning">Unreadable — request a searchable PDF</span>}
+              </div>
+            </div>;
+          })}
+        </CardContent>
+      </Card>}
       {q.data.reports.length === 0 ? <Card><CardContent className="p-6 text-sm text-muted-foreground">No credit reports uploaded. Upload a PDF under Documents → Credit Reports.</CardContent></Card> : <>
         <div className="flex flex-wrap gap-2">{q.data.reports.map((r) => (
           <Button key={r.id} size="sm" variant={r.id === report?.id ? "default" : "outline"} onClick={() => setSel(r.id)}>
@@ -65,7 +116,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
             <CardContent className="space-y-6">
               <AutoExtract report={report} clientId={clientId} canEdit={canEdit} hasData={q.data.fields.some((f) => f.report_id === report.id) || q.data.tradelines.some((t) => t.report_id === report.id)} onDone={refresh} />
               <FieldGrid report={report} fields={q.data.fields.filter((f) => f.report_id === report.id)} canEdit={canEdit} clientId={clientId} onSaved={refresh} />
-              <Tradelines report={report} all={q.data.tradelines} canEdit={canEdit} clientId={clientId} onSaved={refresh} />
+              <Tradelines report={report} all={q.data.tradelines.filter((t) => t.report_id === report.id)} canEdit={canEdit} clientId={clientId} onSaved={refresh} />
             </CardContent>
           </Card>
         )}

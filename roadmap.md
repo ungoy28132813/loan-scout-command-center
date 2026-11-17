@@ -18,4 +18,6 @@
 - [ ] Temporary-account browser role tests (waiting on test-user creation approval; SQL role simulations passed)
 - [x] Persist live profile email/activation/department safeguard and regression tests
 - [x] Owner-only orphaned private test-file inventory and safe cleanup (known synthetic orphan deleted)
+- [x] Client-local PDF extraction into consented unverified staging with staff import/acceptance
+- [x] Client extraction security regression tests and synthetic client-to-staff browser workflow
 ## Phase 2 / 3 — see /roadmap page in app

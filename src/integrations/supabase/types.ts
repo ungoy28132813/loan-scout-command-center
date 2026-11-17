@@ -240,6 +240,87 @@ export type Database = {
           },
         ]
       }
+      client_extraction_submissions: {
+        Row: {
+          client_id: string
+          created_at: string
+          document_id: string
+          id: string
+          idempotency_key: string
+          parser_version: string
+          payload: Json
+          report_id: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          submitted_by: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          idempotency_key: string
+          parser_version: string
+          payload: Json
+          report_id: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_by: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          idempotency_key?: string
+          parser_version?: string
+          payload?: Json
+          report_id?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_extraction_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_extraction_submissions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_extraction_submissions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: true
+            referencedRelation: "credit_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_extraction_submissions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_extraction_submissions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -1436,6 +1517,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_client_extraction: {
+        Args: { _submission_id: string }
+        Returns: undefined
+      }
       bootstrap_role_decision: {
         Args: { _confirmed: boolean; _email: string }
         Returns: string
@@ -1464,6 +1549,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_client_extraction: {
+        Args: { _submission_id: string }
+        Returns: undefined
+      }
       is_client_self: { Args: { _cid: string; _uid: string }; Returns: boolean }
       is_client_staff: {
         Args: { _cid: string; _uid: string }
@@ -1484,6 +1573,18 @@ export type Database = {
       review_source_candidate: {
         Args: { _decision: string; _id: string }
         Returns: string
+      }
+      submit_client_extraction: {
+        Args: { _idempotency_key: string; _payload: Json; _report_id: string }
+        Returns: string
+      }
+      validate_client_extraction_payload: {
+        Args: { _payload: Json }
+        Returns: undefined
+      }
+      validate_client_extraction_required: {
+        Args: { _payload: Json }
+        Returns: undefined
       }
     }
     Enums: {

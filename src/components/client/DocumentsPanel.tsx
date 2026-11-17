@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { FileText, Trash2, Eye, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { extractFile, saveExtraction } from "@/lib/credit-report-parser/save";
+import { submitClientExtraction } from "@/lib/credit-report-parser/client-submit";
 import { PdfReadError } from "@/lib/credit-report-parser/pdf";
 import type { Me } from "@/lib/use-me";
 import { DOC_CATEGORIES, fmtDate } from "@/lib/labels";
@@ -22,6 +23,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ name: string; state: string; tone: "info" | "ok" | "warn" | "error" }[]>([]);
   const canExtract = (me.primary === "owner" || me.primary === "employee") && me.perms.can_edit_extractions;
+  const canAutoRead = consentOk && (canExtract || me.primary === "client");
   const setP = (i: number, state: string, tone: "info" | "ok" | "warn" | "error") => setProgress((p) => p.map((x, k) => (k === i ? { ...x, state, tone } : x)));
   const docs = useQuery({
     queryKey: ["documents", clientId],
@@ -46,16 +48,25 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
       if (error || !doc) { setP(i, "Could not record file", "error"); continue; }
       if (category === "credit_reports") {
         const { data: rep } = await supabase.from("credit_reports").insert({ client_id: clientId, document_id: doc.id, report_type: reportType }).select("id").single();
-        if (!canExtract || !rep) setP(i, "Received securely — our team will review it", "ok");
+        if (!rep) setP(i, "Uploaded, but the report record could not be created", "warn");
+        else if (!canAutoRead) setP(i, "Received securely — our team will review it", "ok");
         else {
           setP(i, "Reading PDF in this browser…", "info");
           try {
             const r = await extractFile(await f.arrayBuffer(), (d, t) => setP(i, `Reading page ${d} of ${t}…`, "info"));
-            const saved = await saveExtraction(rep.id, clientId, r);
-            if (!saved.ok) setP(i, `Uploaded; automatic read not saved: ${saved.error}`, "warn");
-            else if (r.status === "unreadable") setP(i, "Uploaded; no text layer detected — needs OCR or a clearer report", "warn");
-            else if (r.status === "awaiting_manual_entry") setP(i, "Uploaded; nothing could be read reliably — enter manually", "warn");
-            else setP(i, `Uploaded; read ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} — review in Reports`, r.status === "partial" ? "warn" : "ok");
+            if (canExtract) {
+              const saved = await saveExtraction(rep.id, clientId, r);
+              if (!saved.ok) setP(i, `Uploaded; automatic read not saved: ${saved.error}`, "warn");
+              else if (r.status === "unreadable") setP(i, "Uploaded; no text layer detected — needs OCR or a clearer report", "warn");
+              else if (r.status === "awaiting_manual_entry") setP(i, "Uploaded; nothing could be read reliably — enter manually", "warn");
+              else setP(i, `Uploaded; read ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} — review in Reports`, r.status === "partial" ? "warn" : "ok");
+            } else {
+              const submitted = await submitClientExtraction(rep.id, r);
+              if (!submitted.ok) setP(i, "Uploaded, but the automatic read could not be submitted. Assigned staff can read the private PDF.", "warn");
+              else if (r.status === "unreadable") setP(i, "Uploaded; unable to read text — upload a searchable PDF. Staff can see the unreadable status.", "warn");
+              else if (r.status === "awaiting_manual_entry") setP(i, "Uploaded; no reliable values were read. Staff will review the report.", "warn");
+              else setP(i, `Uploaded; ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} sent as unverified for staff review`, "ok");
+            }
           } catch (e) {
             setP(i, `Uploaded; automatic read failed: ${e instanceof PdfReadError ? e.message : "the PDF could not be read"}`, "warn");
           }
@@ -68,6 +79,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
     qc.invalidateQueries({ queryKey: ["facts", clientId] });
     qc.invalidateQueries({ queryKey: ["documents", clientId] });
     qc.invalidateQueries({ queryKey: ["reports", clientId] });
+    qc.invalidateQueries({ queryKey: ["client-extraction-submissions", clientId] });
   };
 
   const view = async (d: { id: string; storage_path: string }) => {
@@ -113,7 +125,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
               </div>
               <input type="file" multiple accept={category === "credit_reports" ? "application/pdf" : "application/pdf,image/jpeg,image/png"} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-secondary-foreground" />
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? (canExtract ? "PDF only. Text is read inside this browser — never sent to an AI service." : "PDF only.") : "PDF, JPG or PNG."} Max 25 MB each. Stored privately; never publicly linkable.</p>
+                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? (canAutoRead ? "PDF only. Text is read inside this browser — never sent to an AI service." : "PDF only.") : "PDF, JPG or PNG."} Max 25 MB / 80 pages each. Stored privately; never publicly linkable.{category === "credit_reports" && me.primary === "client" ? " Your read stays unverified and outside matching until staff accepts it." : ""}</p>
                 <Button onClick={upload} disabled={!files.length || busy}><Upload className="mr-2 h-4 w-4" />{busy ? "Uploading…" : `Upload ${files.length || ""}`}</Button>
               </div>
               {progress.length > 0 && <ul aria-live="polite" className="divide-y rounded border text-sm">{progress.map((p, k) => (

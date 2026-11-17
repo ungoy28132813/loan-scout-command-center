@@ -25,7 +25,7 @@ const POSTURE: [string, string, boolean][] = [
   ["Sign-in", "Email one-time links and email/password account creation are available. New accounts have no access until invited, unless public client sign-up is explicitly enabled. Existing users can also set their own password; known leaked passwords are rejected.", true],
   ["Passkeys", "Not implemented yet.", false],
   ["Forced remote sign-out of a user", "Not implemented yet — deactivation blocks all data access immediately instead.", false],
-  ["Automated PDF extraction", "Text-layer PDFs are read locally in an authorized staff browser, with review flags. Scanned reports still need OCR or manual entry.", true],
+  ["Automated PDF extraction", "Text-layer PDFs are read locally in the authorized client or staff browser. Client reads stay unverified and outside matching until staff import and accept them. Scanned reports still need OCR or manual entry.", true],
 ];
 
 function Security() {
@@ -42,7 +42,7 @@ function Security() {
   const set = async (patch: Record<string, unknown>) => { const { error } = await supabase.from("app_settings").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", 1); if (error) toast.error(error.message); else qc.invalidateQueries({ queryKey: ["settings"] }); };
   const who = (id: string | null) => actors.data?.find((a) => a.id === id)?.email ?? (id ? "unknown user" : "system");
   const rows = (logs.data ?? []).filter((l) => !filter || `${l.action} ${l.entity} ${who(l.actor_id)}`.toLowerCase().includes(filter.toLowerCase()));
-  const entities = ["all", "documents", "orphan_storage_object", "clients", "client_assignments", "employee_permissions", "report_fields", "field_corrections", "match_results", "published_snapshots", "applications", "lender_rules", "readiness_tasks", "app_settings", "profiles", "consents"];
+  const entities = ["all", "documents", "orphan_storage_object", "clients", "client_extraction_submissions", "client_assignments", "employee_permissions", "report_fields", "field_corrections", "match_results", "published_snapshots", "applications", "lender_rules", "readiness_tasks", "app_settings", "profiles", "consents"];
   return (
     <div>
       <PageHeader title="Security Center" kicker="Owner" />

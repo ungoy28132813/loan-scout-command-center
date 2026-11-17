@@ -85,6 +85,27 @@
       "when": 1794881744731,
       "tag": "0011_persist_profile_self_update_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794881943134,
+      "tag": "0012_client_extraction_submissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794882048563,
+      "tag": "0013_harden_client_extraction_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794882228722,
+      "tag": "0014_require_typed_client_extraction_metadata",
+      "breakpoints": true
     }
   ]
 }
