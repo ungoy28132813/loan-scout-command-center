@@ -3,7 +3,7 @@ begin;
 create temporary table product_research_results (check_name text primary key, pass boolean not null) on commit drop;
 create temporary table product_research_ids (id uuid) on commit drop;
 grant select, insert on pg_temp.product_research_results to authenticated;
-grant select, insert on pg_temp.product_research_ids to authenticated;
+grant select, insert, delete on pg_temp.product_research_ids to authenticated;
 
 insert into public.source_review_candidates (seed_key, product_id, criterion, scope, rule_key, bureau, score_model, threshold, representable, source_title, source_url, verified_on, evidence_status)
 select 'synthetic_secondary_rollback', id, 'Synthetic secondary score note', 'Synthetic test only', 'min_score', 'transunion', 'FICO 8', 600, true, 'Synthetic secondary source', 'https://example.org/secondary', current_date, 'secondary_source_pending_owner'

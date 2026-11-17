@@ -4,8 +4,8 @@
 - [x] Section 01: safely available fixes, acceptance results, blockers, verification and cleanup (docs/BUILD_QUEUE.md)
 - [x] Section 02: browser-local OCR, evidence parsing, review acceptance, and validated-match recomputation
 - [x] Section 02: final build log, cleanup verification, and commit (tests and documentation complete)
-- [ ] Section 03: verified product catalog expansion and on-demand source research/review
-- [ ] Section 03: seed/security/browser verification, documentation, cleanup, and commit
+- [x] Section 03: verified product catalog expansion and on-demand source research/review
+- [x] Section 03: seed/security/browser verification, documentation, cleanup, and commit
 - [ ] Sections 04–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
 ## Phase 1 — open
 - [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
@@ -19,7 +19,7 @@
 - [x] First real product catalog (5 products + scoped Prosper Note Channel record) and owner source review queue
 - [ ] Owner reviews 13 pending source criteria (waiting on owner)
 - [ ] Questionnaire inputs + rule types for existing-account age, membership duration, direct deposit (kept as notes for now)
-- [ ] Optional: Chase My Chase Loan as a card-feature product type (not added)
+- [x] Chase My Chase Loan as an official-source card-feature product type (excluded from standalone-loan matching)
 - [x] Production-readiness pass: owner empty states and accurate security/authentication copy
 - [x] Production-readiness pass: internal function privileges and rollback-only role/RLS regression checks
 - [x] Production-readiness pass: synthetic owner workflow through publication and cleanup

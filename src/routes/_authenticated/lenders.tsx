@@ -42,7 +42,7 @@ function ProductCard({ p, lender, rules, pending, onOpen }: { p: Product; lender
 }
 
 export const Route = createFileRoute("/_authenticated/lenders")({
-  head: () => ({ meta: [{ title: "Lender Intelligence — Loan Scout Matching Tool" }, { name: "description", content: "Lender products, cited rules and provenance." }, { property: "og:title", content: "Lender Intelligence — Loan Scout" }, { property: "og:description", content: "Lender products, cited rules and provenance." }] }),
+  head: () => ({ meta: [{ title: "Lender Intelligence — Loan Scout Matching Tool" }, { name: "description", content: "Lender products, cited rules and provenance." }, { property: "og:title", content: "Lender Intelligence — Loan Scout" }, { property: "og:description", content: "Lender products, cited rules and provenance." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Lenders,
 });
 
@@ -131,7 +131,7 @@ function LenderDetail({ lender, products, rules, candidates, research, isOwner, 
     </CardHeader>
     <CardContent className="space-y-4">
       {products.length === 0 && <p className="text-sm text-muted-foreground">No products recorded. {isOwner ? "Add products below from official lender sources." : "The owner adds products."}</p>}
-      {products.map((p) => { const pr = rules.filter((r) => r.product_id === p.id); return <div key={p.id} className="rounded border p-3">
+      {products.map((p) => { const pr = rules.filter((r) => r.product_id === p.id); return <div key={p.id} data-product-name={p.name} className="rounded border p-3">
         <div className="flex flex-wrap items-center justify-between gap-2"><div><b>{p.name}</b> <span className="text-xs text-muted-foreground">· {p.product_type.replace(/_/g, " ")}</span></div>
           <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={compare.includes(p.id)} onChange={(e) => setCompare(e.target.checked ? [...compare, p.id] : compare.filter((x) => x !== p.id))} />Compare</label></div>
         <div className="text-xs text-muted-foreground">Published range: {p.published_min_amount == null && p.published_max_amount == null ? "Unknown" : `${fmtMoney(p.published_min_amount)} – ${fmtMoney(p.published_max_amount)}`} ({p.amount_kind === "credit_limit" ? "credit limit — not cash" : p.amount_kind === "available_credit" ? "existing available card credit — not a standalone loan" : p.amount_kind.replace("_", " ")}) · Pull: {p.pull_type.replace("_", " ")} {p.official_url && <a href={p.official_url} target="_blank" rel="noreferrer" className="underline">official page</a>}</div>
@@ -148,7 +148,7 @@ function LenderDetail({ lender, products, rules, candidates, research, isOwner, 
           <Input placeholder="Official product URL" value={np.url} onChange={(e) => setNp({ ...np, url: e.target.value })} />
           <Input placeholder="Published min $ (blank = unknown)" value={np.min} onChange={(e) => setNp({ ...np, min: e.target.value })} />
           <Input placeholder="Published max $ (blank = unknown)" value={np.max} onChange={(e) => setNp({ ...np, max: e.target.value })} />
-          <Select value={np.kind} onValueChange={(v) => setNp({ ...np, kind: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Amount type unknown</SelectItem><SelectItem value="loan_cash">Loan (cash)</SelectItem><SelectItem value="credit_limit">Credit limit (not cash)</SelectItem></SelectContent></Select>
+          <Select value={np.kind} onValueChange={(v) => setNp({ ...np, kind: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Amount type unknown</SelectItem><SelectItem value="loan_cash">Loan (cash)</SelectItem><SelectItem value="credit_limit">Credit limit (not cash)</SelectItem><SelectItem value="available_credit">Available card credit</SelectItem></SelectContent></Select>
           <Select value={np.pull} onValueChange={(v) => setNp({ ...np, pull: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Pull type unknown</SelectItem><SelectItem value="soft_prequal">Soft pre-qual (documented)</SelectItem><SelectItem value="hard">Hard pull (documented)</SelectItem></SelectContent></Select>
           <Button onClick={addProduct}>Add product</Button>
         </div></div>}

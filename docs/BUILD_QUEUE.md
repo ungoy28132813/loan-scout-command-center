@@ -6,7 +6,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | --- | --- | --- |
 | 01 | Security, identity and consent | **completed** — available scope verified; two external capability blockers below |
 | 02 | Credit PDF / OCR | **completed** — local English OCR and verified-analysis scope verified; documented scan/layout limits below |
-| 03 | Lender Catalog / Research | queued |
+| 03 | Lender Catalog / Research | **completed** — official-source retrieval and owner review verified; AI interpretation remains pending |
 | 04 | Underwriting Rules / Questionnaires | queued |
 | 05 | Funding Planning / Simulators | queued |
 | 06 | Guided Applications / Outcomes | queued |
@@ -87,3 +87,35 @@ Lender research, further underwriting inputs, simulators, guided applications/ou
 - Parser layouts are best-effort for SmartCredit, IdentityIQ, MyScoreIQ, and similar reports, not a claim to support every provider layout. Unreadable fields remain Unknown and automatic reads never become verified without staff action.
 - A separate live client-browser upload session was not run in this section; client staging and cross-tenant boundaries were exercised by the rollback-only database suite. The actual owner browser workflow and local OCR pipeline were run end to end.
 - No lender-specific utilization simulation or lender rule approval was added. No real client report, credential, external OCR service, or public deployment was used.
+
+## Section 03 — Lender products, on-demand research and source review
+
+**State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified.
+
+### Implemented and verified
+
+- Expanded the existing 24-lender directory from 6 to **49 unique product records** using 43 additional official-source identities. The catalog now covers personal credit cards, personal loans, personal lines of credit, business credit cards, business loans, and business lines of credit. No original product list was invented or backfilled.
+- Added explicit `personal_line_of_credit`, `business_line_of_credit`, and `credit_card_feature` taxonomy. Personal and business credit lines enter only their matching goal scope; card features and ambiguous legacy credit lines stay out of automatic goal matching. Chase My Chase Loan is an eligible existing-card feature using available card credit, not a standalone personal loan.
+- Recorded official URLs, product/channel scope, public-source checked dates, and only explicitly supported marketed amounts and APR ranges. Introductory and standard APRs are distinguished. Interest-only rates, monthly loan fees, as-low-as rates, and pricing examples were not converted into APR ranges. Missing values remain unknown.
+- Added an authenticated on-demand official-page retrieval function for staff with research permission. Retrieval requires HTTPS, stays on the product's official host across redirects, uses a 15-second timeout, accepts only readable HTML/text, caps responses at 1 MB and excerpts at 12,000 characters, and returns a content hash. It performs no AI interpretation, scheduled monitoring, or automatic criterion extraction.
+- Added manual source submission for unsupported PDFs, retrieval failures, and secondary sources. Research records include excerpt/locator, official or secondary tier, retrieval method, channel scope, version/effective/check dates, content hash when retrieved, and proposed marketing-only changes.
+- Added a separate owner-only product-research review queue. Official approval can apply only allowlisted marketing fields; it cannot change product taxonomy, pull type, or any lender rule. Secondary approval remains a note and cannot update verified product fields. No research action publishes recommendations or activates matching rules.
+- Extended existing criterion candidates with excerpt, version, effective-date, and freshness metadata. Secondary criterion candidates cannot become verified active rules. The original **13 pending criteria remain pending and unapproved**.
+- Added stale warnings for product research and existing criteria. Corrected inherited table privileges so authenticated users have only staff-RLS reads; submissions and reviews require checked functions. Reconciled lender aliases that initially skipped 17 seed rows rather than treating the partial count as complete.
+
+### Acceptance results — 2026-11-17
+
+- **76/76 application tests passed across 11 files**, including official-source URL isolation, redirect-host rules, text sanitization/bounds, stale detection, all six categories, 43 idempotent seed rows, card-feature exclusion, personal/business credit-line scope, prior parser/OCR, business isolation, matching, and routing tests.
+- **TypeScript check passed.** Preview builds reported **build OK**, including after the final UI changes.
+- **23/23 targeted transaction-rollback database checks passed.** They cover 49 unique products, all categories, card-feature taxonomy, 13 preserved pending criteria, zero active rules, least-privilege table grants, secondary-rule rejection, cross-host and taxonomy-change rejection, pending official research, owner marketing-only approval, secondary note-only approval, and client read/submit/review denial. Every synthetic change was rolled back.
+- **Synthetic owner Chromium workflow passed:** 24 lender identities and 49 products rendered; My Chase Loan displayed as a card feature with available-credit wording; the on-demand Chase official-page retrieval returned **8,662 public characters** for human review. The form was then cancelled without submitting. No browser page errors occurred and no research record was retained.
+- **Basic security scan completed with no findings.** This is not deep code analysis or production certification.
+- Submission and owner approval were exercised by the transaction-rollback database suite rather than retained through the browser. No real client data, files, credentials, or reports were used.
+- Final cleanup readback found **49/49 unique products, 13 pending criteria, 0 active rules, 0 product-research rows, 0 synthetic candidates, 0 clients, and 0 documents**. The research table's final privileges are service-role administration plus authenticated read-only access subject to staff RLS.
+
+### Documented limits and pending capability
+
+- **AI source analysis is pending and visibly labeled.** No AI research connector is configured. The implemented workflow retrieves and stores public source text for human review; it does not summarize, infer criteria, or activate rules with AI.
+- Direct retrieval supports public HTML/text only. PDFs, blocked pages, unsupported content types, responses over 1 MB, timeouts, and unreadable pages require truthful manual source submission with an excerpt/locator. No retrieval failure is treated as verified evidence.
+- Product identities and marketing ranges are not underwriting criteria. Fifth Third and Zions offers that could not be verified in the research pass were omitted rather than guessed; lender identities with no verified products remain visible.
+- No background/scheduled research, automatic lender applications, bureau pulls, owner rule approval, client publication, or public deployment was added.

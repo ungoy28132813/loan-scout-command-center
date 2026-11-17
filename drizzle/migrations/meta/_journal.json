@@ -176,6 +176,20 @@
       "when": 1794885252712,
       "tag": "0024_expand_verified_lender_product_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794885454444,
+      "tag": "0025_lock_product_research_table_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794885466891,
+      "tag": "0026_reconcile_lender_alias_product_seed",
+      "breakpoints": true
     }
   ]
 }
