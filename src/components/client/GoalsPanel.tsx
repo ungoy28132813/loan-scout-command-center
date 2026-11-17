@@ -24,7 +24,7 @@ export function GoalsPanel({ clientId }: { clientId: string }) {
       business_profile_id = data?.id ?? null;
     }
     const { error } = await supabase.from("funding_goals").insert({ client_id: clientId, title: title.slice(0, 120), goal_type: type, target_amount: amt ? Number(amt) : null, business_profile_id });
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     setTitle(""); setAmt(""); setBiz("");
     qc.invalidateQueries({ queryKey: ["goals", clientId] }); qc.invalidateQueries({ queryKey: ["qa", clientId] });
   };

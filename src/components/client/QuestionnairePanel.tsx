@@ -38,16 +38,16 @@ export function QuestionnairePanel({ clientId, ruleKeys, staff, onChanged }: { c
   );
 }
 
-function QRow({ q, clientId, existing, staff, onSaved }: { q: Question; clientId: string; staff: boolean; existing?: { value_numeric: number | null; value_text: string | null; status: string; verified: boolean }; onSaved: () => void }) {
+function QRow({ q, clientId, existing, staff, onSaved }: { q: Question; clientId: string; staff: boolean; existing?: { value_numeric: number | null; value_text: string | null; status: string; verified: boolean } | undefined; onSaved: () => void }) {
   const [v, setV] = useState(existing ? String(existing.value_numeric ?? existing.value_text ?? "") : "");
   const save = async (skip: boolean, verify = false) => {
     const num = q.kind === "number" && !skip ? Number(v) : null;
-    if (!skip && q.kind === "number" && (v.trim() === "" || Number.isNaN(num))) return toast.error("Enter a number or choose Skip");
+    if (!skip && q.kind === "number" && (v.trim() === "" || Number.isNaN(num))) return void toast.error("Enter a number or choose Skip");
     const { error } = await supabase.from("questionnaire_answers").upsert({
       client_id: clientId, question_key: q.key, value_numeric: skip ? null : num, value_text: skip || q.kind === "number" ? null : v.slice(0, 500),
       status: skip ? "skipped" : "answered", verified: staff && verify && !skip, updated_at: new Date().toISOString(),
     }, { onConflict: "client_id,question_key" });
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     if (skip) setV("");
     toast.success(skip ? "Marked unknown" : "Saved");
     onSaved();

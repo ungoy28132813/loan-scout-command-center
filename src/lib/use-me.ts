@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type PermKey = "can_upload_docs" | "can_edit_extractions" | "can_run_matching" | "can_approve_publish" | "can_update_applications" | "can_manage_readiness" | "can_post_announcements" | "can_export_pdf" | "can_propose_rules";
 export type Role = "owner" | "employee" | "client";
 export interface Me {
   id: string; email: string; fullName: string | null; theme: "light" | "dark"; active: boolean;
-  roles: Role[]; primary: Role | null; perms: Record<string, boolean>; clientId: string | null;
+  roles: Role[]; primary: Role | null; perms: Record<PermKey, boolean>; clientId: string | null;
 }
 
 export async function fetchMe(): Promise<Me | null> {
@@ -25,7 +26,7 @@ export async function fetchMe(): Promise<Me | null> {
     id: user.id, email: user.email ?? "", fullName: profile?.full_name ?? null,
     theme: (profile?.theme as "light" | "dark") ?? "light", active: profile?.active ?? false,
     roles: r, primary, clientId: client?.id ?? null,
-    perms: new Proxy(p, { get: (t, k: string) => isOwner || Boolean(t[k]) }),
+    perms: new Proxy(p, { get: (t, k: string) => isOwner || Boolean(t[k]) }) as Record<PermKey, boolean>,
   };
 }
 

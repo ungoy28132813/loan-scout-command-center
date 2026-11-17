@@ -35,7 +35,7 @@ export function ReportsPanel({ clientId, me, onChanged }: { clientId: string; me
   const setStatus = async (s: string) => {
     if (!report) return;
     const { error } = await supabase.from("credit_reports").update({ extraction_status: s }).eq("id", report.id);
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     if (s === "clearer_pdf_requested") {
       await supabase.from("announcements").insert({ client_id: clientId, title: "Clearer credit report needed", body: "We couldn't reliably read one of your uploaded credit reports. Please upload a clearer, complete PDF (all pages, text not image-scanned if possible) under My documents → Credit Reports.", kind: "document_request" });
     }
@@ -89,7 +89,7 @@ type Field = { id: string; bureau: string; field_key: string; score_model: strin
 
 function FieldGrid({ report, fields, canEdit, clientId, onSaved }: { report: { id: string; report_type: string }; fields: Field[]; canEdit: boolean; clientId: string; onSaved: () => void }) {
   const bureaus = report.report_type === "tri_merge" || report.report_type === "unknown" ? BUREAUS : [report.report_type as (typeof BUREAUS)[number]];
-  const [edit, setEdit] = useState<{ bureau: string; key: string; model: string | null; existing?: Field } | null>(null);
+  const [edit, setEdit] = useState<{ bureau: string; key: string; model: string | null; existing?: Field | undefined } | null>(null);
   const [scoreB, setScoreB] = useState<string>(bureaus[0]); const [scoreM, setScoreM] = useState(SCORE_MODELS[0]!);
   const get = (b: string, k: string, m: string | null = null) => fields.find((f) => f.bureau === b && f.field_key === k && (f.score_model ?? null) === m);
   const cell = (b: string, k: string, m: string | null = null) => {
@@ -123,21 +123,21 @@ function FieldGrid({ report, fields, canEdit, clientId, onSaved }: { report: { i
   );
 }
 
-function EditField({ edit, reportId, clientId, onClose, onSaved }: { edit: { bureau: string; key: string; model: string | null; existing?: Field }; reportId: string; clientId: string; onClose: () => void; onSaved: () => void }) {
+function EditField({ edit, reportId, clientId, onClose, onSaved }: { edit: { bureau: string; key: string; model: string | null; existing?: Field | undefined }; reportId: string; clientId: string; onClose: () => void; onSaved: () => void }) {
   const [val, setVal] = useState(edit.existing?.value != null ? String(edit.existing.value) : "");
   const [reason, setReason] = useState(""); const [src, setSrc] = useState(edit.existing?.source_ref ?? "");
   const isCorrection = edit.existing?.value != null;
   const save = async () => {
     const v = val.trim() === "" ? null : Number(val);
-    if (v != null && Number.isNaN(v)) return toast.error("Enter a number, or leave empty for Unknown");
-    if (isCorrection && reason.trim().length < 5) return toast.error("A reason is required for corrections");
+    if (v != null && Number.isNaN(v)) return void toast.error("Enter a number, or leave empty for Unknown");
+    if (isCorrection && reason.trim().length < 5) return void toast.error("A reason is required for corrections");
     if (edit.existing) {
       const { error } = await supabase.from("report_fields").update({ value: v, status: isCorrection ? "corrected" : v == null ? "unknown" : "entered", source_ref: src || null, updated_at: new Date().toISOString() }).eq("id", edit.existing.id);
-      if (error) return toast.error(error.message);
+      if (error) return void toast.error(error.message);
       if (isCorrection) await supabase.from("field_corrections").insert({ field_id: edit.existing.id, client_id: clientId, old_value: edit.existing.value, new_value: v, reason: reason.slice(0, 500), source_ref: src || null });
     } else {
       const { error } = await supabase.from("report_fields").insert({ report_id: reportId, client_id: clientId, bureau: edit.bureau, field_key: edit.key, score_model: edit.model, value: v, status: v == null ? "unknown" : "entered", source_ref: src || null });
-      if (error) return toast.error(error.message);
+      if (error) return void toast.error(error.message);
     }
     toast.success("Saved — re-run matching to recalculate"); onSaved();
   };
@@ -164,7 +164,7 @@ function Tradelines({ report, all, canEdit, clientId, onSaved }: { report: { id:
     if (!f.creditor.trim()) return;
     const key = `${f.creditor.trim().toLowerCase().replace(/\s+/g, " ")}|${f.last4.trim()}`;
     const { error } = await supabase.from("tradelines").insert({ report_id: report.id, client_id: clientId, bureau: f.bureau, creditor: f.creditor.slice(0, 80), account_ref_last4: f.last4.slice(-4) || null, account_type: f.type, balance: f.balance ? Number(f.balance) : null, credit_limit: f.limit ? Number(f.limit) : null, is_open: f.open === "unknown" ? null : f.open === "yes", late_count: f.late ? Number(f.late) : null, is_collection: f.collection === "yes", reconcile_key: key });
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     setF({ ...f, creditor: "", last4: "", balance: "", limit: "", late: "" }); onSaved();
   };
   const groups = new Map<string, TL[]>();

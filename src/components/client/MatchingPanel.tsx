@@ -59,7 +59,7 @@ export function MatchingPanel({ clientId, me }: { clientId: string; me: Me }) {
   const canReview = me.perms.can_approve_publish;
 
   const update = async (id: string, patch: Record<string, unknown>) => {
-    const { error } = await supabase.from("match_results").update(patch).eq("id", id);
+    const { error } = await supabase.from("match_results").update(patch as never).eq("id", id);
     if (error) toast.error(error.message); else refresh();
   };
   const move = async (idx: number, dir: -1 | 1) => {
@@ -157,7 +157,7 @@ function ManualAdd({ runId, clientId, products, onDone }: { runId: string; clien
   const [pid, setPid] = useState(""); const [reason, setReason] = useState("");
   if (!products.length) return null;
   const add = async () => {
-    if (!pid || reason.trim().length < 5) return toast.error("Choose a product and give a reason");
+    if (!pid || reason.trim().length < 5) return void toast.error("Choose a product and give a reason");
     const { error } = await supabase.from("match_results").insert({ run_id: runId, client_id: clientId, product_id: pid, status: "needs_review", suitability_score: null, conditions: { list: [], summary: "Manually added by staff — not evaluated against cited rules. Eligibility is unverified.", steps: [] } as never, manual_added: true, manual_reason: reason.slice(0, 500), rank: 999 });
     if (error) toast.error(error.message); else { setPid(""); setReason(""); onDone(); }
   };
@@ -187,8 +187,8 @@ function PublishBuilder({ clientId, results, prod, nextVersion, onDone }: { clie
       checklist: e.checklist.split("\n").map((s) => s.trim()).filter(Boolean), documents: e.docs.split("\n").map((s) => s.trim()).filter(Boolean), client_summary: e.summary.trim() };
   });
   const save = async (status: "draft" | "scheduled") => {
-    if (!picked.length) return toast.error("Select at least one approved item");
-    if (status === "scheduled" && !when) return toast.error("Pick a date");
+    if (!picked.length) return void toast.error("Select at least one approved item");
+    if (status === "scheduled" && !when) return void toast.error("Pick a date");
     const { error } = await supabase.from("published_snapshots").insert({ client_id: clientId, version: nextVersion, scope: picked.length === 1 ? "individual" : picked.length === results.length ? "strategy" : "group", status, content: { items: build(), disclaimer: DISCLAIMER } as never, scheduled_for: status === "scheduled" ? new Date(when).toISOString() : null });
     if (error) toast.error(error.message); else { toast.success(status === "draft" ? "Draft saved — use Publish now in history when ready" : "Saved as scheduled — release it from history on that date"); onDone(); }
   };

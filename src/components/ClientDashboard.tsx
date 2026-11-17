@@ -91,7 +91,7 @@ function ConsentCard({ me, clientId, onDone }: { me: Me; clientId: string; onDon
       { user_id: me.id, client_id: clientId, kind: "privacy_notice", version: CONSENT_VERSION },
       { user_id: me.id, client_id: clientId, kind: "report_analysis_authorization", version: CONSENT_VERSION },
     ]);
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     toast.success("Thank you — authorization recorded"); onDone();
   };
   return (
@@ -110,7 +110,7 @@ function TaskCard({ t, onDone }: { t: { id: string; title: string; description: 
   const [note, setNote] = useState("");
   const mark = async () => {
     const { error } = await supabase.rpc("client_mark_task", { _task: t.id, _note: note });
-    if (error) return toast.error("Could not update task");
+    if (error) return void toast.error("Could not update task");
     toast.success("Marked complete — your advisor will verify it"); onDone();
   };
   return (

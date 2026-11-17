@@ -1,0 +1,175 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useMe } from "@/lib/use-me";
+import { isStale } from "@/lib/match-engine";
+import { RULE_KEYS, SCORE_MODELS, fmtMoney, fmtDate } from "@/lib/labels";
+import { PageHeader } from "@/components/AppShell";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StatusBadge, FutureBadge } from "@/components/StatusBadge";
+
+export const Route = createFileRoute("/_authenticated/lenders")({
+  head: () => ({ meta: [{ title: "Lender Intelligence — Loan Scout Matching Tool" }, { name: "description", content: "Lender products, cited rules and provenance." }, { property: "og:title", content: "Lender Intelligence — Loan Scout" }, { property: "og:description", content: "Lender products, cited rules and provenance." }] }),
+  component: Lenders,
+});
+
+const PTYPES = ["personal_loan", "credit_card", "line_of_credit", "business_credit_card", "business_loan", "unknown"];
+
+function Lenders() {
+  const { data: me } = useMe(); const qc = useQueryClient();
+  const [search, setSearch] = useState(""); const [ptype, setPtype] = useState("all"); const [rs, setRs] = useState("all");
+  const [selected, setSelected] = useState<string | null>(null); const [compare, setCompare] = useState<string[]>([]);
+  const q = useQuery({ queryKey: ["lenders"], queryFn: async () => {
+    const [l, p, r, s] = await Promise.all([supabase.from("lenders").select("*").order("name"), supabase.from("lender_products").select("*"), supabase.from("lender_rules").select("*").order("created_at", { ascending: false }), supabase.from("shortlists").select("*")]);
+    return { lenders: l.data ?? [], products: p.data ?? [], rules: r.data ?? [], shortlists: s.data ?? [] };
+  } });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["lenders"] });
+  const list = useMemo(() => (q.data?.lenders ?? []).filter((l) => l.name.toLowerCase().includes(search.toLowerCase()) && (rs === "all" || l.research_status === rs) && (ptype === "all" || q.data!.products.some((p) => p.lender_id === l.id && p.product_type === ptype))), [q.data, search, rs, ptype]);
+  if (!q.data || !me) return null;
+  const isOwner = me.primary === "owner";
+  const proposed = q.data.rules.filter((r) => r.approval_status === "proposed");
+  const lender = q.data.lenders.find((l) => l.id === selected);
+
+  return (
+    <div>
+      <PageHeader title="Lender Intelligence" kicker={`${q.data.lenders.length} lender identities · ${q.data.products.length} products`}>
+        <Button variant="outline" disabled title="Not built yet"><Sparkles className="mr-2 h-4 w-4" />On-demand AI research <span className="ml-2"><FutureBadge phase="Phase 3" /></span></Button>
+      </PageHeader>
+      <Alert className="mb-4"><AlertDescription>Seeded lender <b>identities only</b>. No product requirements, cutoffs, APRs or bureau-pull data are pre-filled — every rule must be entered with a source URL, title, verification date and tier, then approved by the owner before it affects matching.</AlertDescription></Alert>
+      {isOwner && proposed.length > 0 && <Card className="mb-4 border-gold"><CardHeader><CardTitle className="label-caps">Rule changes awaiting owner approval ({proposed.length})</CardTitle></CardHeader><CardContent className="space-y-2">
+        {proposed.map((r) => { const p = q.data!.products.find((x) => x.id === r.product_id); return <RuleRow key={r.id} r={r} label={`${q.data!.lenders.find((l) => l.id === p?.lender_id)?.name} — ${p?.name}`} owner onDone={refresh} me={me.id} allRules={q.data!.rules} />; })}
+      </CardContent></Card>}
+      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+        <Card><CardContent className="space-y-3 p-4">
+          <Input placeholder="Search lenders" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="flex gap-2">
+            <Select value={ptype} onValueChange={setPtype}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All product types</SelectItem>{PTYPES.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select>
+            <Select value={rs} onValueChange={setRs}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Any research</SelectItem><SelectItem value="awaiting_verified_research">Awaiting research</SelectItem><SelectItem value="partially_verified">Partially verified</SelectItem><SelectItem value="verified">Verified</SelectItem></SelectContent></Select>
+          </div>
+          <ul className="max-h-[60vh] divide-y overflow-y-auto">{list.map((l) => <li key={l.id}><button onClick={() => setSelected(l.id)} className={`w-full p-2 text-left text-sm hover:bg-muted ${selected === l.id ? "bg-muted" : ""}`}>
+            <div className="font-medium">{l.name}</div><div className="flex items-center gap-2 text-xs text-muted-foreground">{q.data!.products.filter((p) => p.lender_id === l.id).length} products · <StatusBadge value={l.research_status === "verified" ? "verified" : "unknown"} label={l.research_status.replace(/_/g, " ")} /></div></button></li>)}</ul>
+        </CardContent></Card>
+        <div className="space-y-4">
+          {lender ? <LenderDetail lender={lender} products={q.data.products.filter((p) => p.lender_id === lender.id)} rules={q.data.rules} isOwner={isOwner} canPropose={me.perms.can_propose_rules} me={me.id} compare={compare} setCompare={setCompare} onDone={refresh} /> : <Card><CardContent className="p-6 text-sm text-muted-foreground">Select a lender to view products, cited rules and provenance.</CardContent></Card>}
+          <Compare ids={compare} data={q.data} clear={() => setCompare([])} />
+          <Shortlists data={q.data} compare={compare} onLoad={setCompare} onDone={refresh} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type RuleT = { id: string; product_id: string; rule_key: string; bureau: string | null; score_model: string | null; lookback_months: number | null; threshold: number; source_tier: string; source_title: string; source_url: string; verified_on: string; effective_date: string | null; stale_after_days: number; approval_status: string; version: number; supersedes: string | null };
+
+function RuleRow({ r, label, owner, onDone, me, allRules }: { r: RuleT; label?: string; owner: boolean; onDone: () => void; me: string; allRules: RuleT[] }) {
+  const stale = isStale(r.verified_on, r.stale_after_days);
+  const approve = async () => {
+    const prev = allRules.filter((x) => x.product_id === r.product_id && x.rule_key === r.rule_key && x.approval_status === "active" && (x.bureau ?? "") === (r.bureau ?? "") && (x.score_model ?? "") === (r.score_model ?? ""));
+    for (const p of prev) await supabase.from("lender_rules").update({ approval_status: "retired" }).eq("id", p.id);
+    const { error } = await supabase.from("lender_rules").update({ approval_status: "active", approved_by: me, approved_at: new Date().toISOString(), version: (prev[0]?.version ?? 0) + 1, supersedes: prev[0]?.id ?? null }).eq("id", r.id);
+    if (error) toast.error(error.message); else onDone();
+  };
+  const set = async (s: string) => { const { error } = await supabase.from("lender_rules").update({ approval_status: s }).eq("id", r.id); if (error) toast.error(error.message); else onDone(); };
+  return <div className="rounded border p-3 text-sm">
+    {label && <div className="text-xs text-muted-foreground">{label}</div>}
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span><b>{RULE_KEYS.find(([k]) => k === r.rule_key)?.[1]}</b>{r.bureau ? ` · ${r.bureau}` : ""}{r.score_model ? ` · ${r.score_model}` : ""}{r.lookback_months ? ` · ${r.lookback_months} mo` : ""} · threshold {r.threshold}</span>
+      <span className="flex items-center gap-1"><StatusBadge value={r.approval_status} /><StatusBadge value={r.source_tier === "verified_primary" ? "verified" : "estimate_concern"} label={r.source_tier.replace(/_/g, " ")} />{stale && <StatusBadge value="fail" label="stale" />}<span className="text-xs text-muted-foreground">v{r.version}</span></span>
+    </div>
+    <div className="mt-1 text-xs text-muted-foreground">Source: <a href={r.source_url} target="_blank" rel="noreferrer" className="underline">{r.source_title}</a> · verified {r.verified_on}{r.effective_date ? ` · effective ${r.effective_date}` : ""} · review every {r.stale_after_days} days</div>
+    {owner && r.approval_status === "proposed" && <div className="mt-2 flex gap-2"><Button size="sm" onClick={approve}>Approve & activate</Button><Button size="sm" variant="outline" onClick={() => set("rejected")}>Reject</Button></div>}
+    {owner && r.approval_status === "active" && <Button size="sm" variant="ghost" className="mt-1" onClick={() => set("retired")}>Retire (disable)</Button>}
+  </div>;
+}
+
+function LenderDetail({ lender, products, rules, isOwner, canPropose, me, compare, setCompare, onDone }: { lender: { id: string; name: string; official_url: string | null; research_status: string }; products: { id: string; name: string; product_type: string; official_url: string | null; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string; research_status: string }[]; rules: RuleT[]; isOwner: boolean; canPropose: boolean; me: string; compare: string[]; setCompare: (v: string[]) => void; onDone: () => void }) {
+  const [np, setNp] = useState({ name: "", type: "unknown", url: "", min: "", max: "", kind: "unknown", pull: "unknown" });
+  const [lurl, setLurl] = useState(lender.official_url ?? ""); const [lrs, setLrs] = useState(lender.research_status);
+  const addProduct = async () => { if (!np.name.trim()) return; const { error } = await supabase.from("lender_products").insert({ lender_id: lender.id, name: np.name.slice(0, 120), product_type: np.type, official_url: np.url || null, published_min_amount: np.min ? Number(np.min) : null, published_max_amount: np.max ? Number(np.max) : null, amount_kind: np.kind, pull_type: np.pull }); if (error) toast.error(error.message); else { setNp({ name: "", type: "unknown", url: "", min: "", max: "", kind: "unknown", pull: "unknown" }); onDone(); } };
+  const saveLender = async () => { const { error } = await supabase.from("lenders").update({ official_url: lurl || null, research_status: lrs }).eq("id", lender.id); if (error) toast.error(error.message); else onDone(); };
+  return <Card>
+    <CardHeader><CardTitle className="font-display text-3xl">{lender.name}</CardTitle>
+      {isOwner && <div className="flex flex-wrap gap-2"><Input placeholder="Official website" className="w-64" value={lurl} onChange={(e) => setLurl(e.target.value)} />
+        <Select value={lrs} onValueChange={setLrs}><SelectTrigger className="w-52"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="awaiting_verified_research">Awaiting verified research</SelectItem><SelectItem value="partially_verified">Partially verified</SelectItem><SelectItem value="verified">Verified</SelectItem></SelectContent></Select>
+        <Button size="sm" variant="secondary" onClick={saveLender}>Save</Button></div>}
+    </CardHeader>
+    <CardContent className="space-y-4">
+      {products.length === 0 && <p className="text-sm text-muted-foreground">No products recorded. {isOwner ? "Add products below from official lender sources." : "The owner adds products."}</p>}
+      {products.map((p) => { const pr = rules.filter((r) => r.product_id === p.id); return <div key={p.id} className="rounded border p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2"><div><b>{p.name}</b> <span className="text-xs text-muted-foreground">· {p.product_type.replace(/_/g, " ")}</span></div>
+          <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={compare.includes(p.id)} onChange={(e) => setCompare(e.target.checked ? [...compare, p.id] : compare.filter((x) => x !== p.id))} />Compare</label></div>
+        <div className="text-xs text-muted-foreground">Published range: {p.published_min_amount == null && p.published_max_amount == null ? "Unknown" : `${fmtMoney(p.published_min_amount)} – ${fmtMoney(p.published_max_amount)}`} ({p.amount_kind === "credit_limit" ? "credit limit — not cash" : p.amount_kind.replace("_", " ")}) · Pull: {p.pull_type.replace("_", " ")} {p.official_url && <a href={p.official_url} target="_blank" rel="noreferrer" className="underline">official page</a>}</div>
+        <div className="mt-2 space-y-2">{pr.length === 0 ? <StatusBadge value="unknown" label="awaiting verified research — no rules" /> : pr.filter((r) => r.approval_status !== "rejected").map((r) => <RuleRow key={r.id} r={r} owner={isOwner} onDone={onDone} me={me} allRules={rules} />)}</div>
+        {canPropose && <ProposeRule productId={p.id} me={me} onDone={onDone} />}
+      </div>; })}
+      {isOwner && <div className="rounded border border-dashed p-3"><div className="label-caps mb-2 text-muted-foreground">Add product (from official source)</div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Input placeholder="Product name" value={np.name} onChange={(e) => setNp({ ...np, name: e.target.value })} />
+          <Select value={np.type} onValueChange={(v) => setNp({ ...np, type: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PTYPES.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select>
+          <Input placeholder="Official product URL" value={np.url} onChange={(e) => setNp({ ...np, url: e.target.value })} />
+          <Input placeholder="Published min $ (blank = unknown)" value={np.min} onChange={(e) => setNp({ ...np, min: e.target.value })} />
+          <Input placeholder="Published max $ (blank = unknown)" value={np.max} onChange={(e) => setNp({ ...np, max: e.target.value })} />
+          <Select value={np.kind} onValueChange={(v) => setNp({ ...np, kind: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Amount type unknown</SelectItem><SelectItem value="loan_cash">Loan (cash)</SelectItem><SelectItem value="credit_limit">Credit limit (not cash)</SelectItem></SelectContent></Select>
+          <Select value={np.pull} onValueChange={(v) => setNp({ ...np, pull: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Pull type unknown</SelectItem><SelectItem value="soft_prequal">Soft pre-qual (documented)</SelectItem><SelectItem value="hard">Hard pull (documented)</SelectItem></SelectContent></Select>
+          <Button onClick={addProduct}>Add product</Button>
+        </div></div>}
+    </CardContent>
+  </Card>;
+}
+
+function ProposeRule({ productId, me, onDone }: { productId: string; me: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ key: "min_score", bureau: "transunion", model: "FICO 8", lookback: "", threshold: "", tier: "verified_primary", title: "", url: "", verified: "", effective: "", stale: "180" });
+  if (!open) return <Button size="sm" variant="ghost" className="mt-2" onClick={() => setOpen(true)}>+ Propose cited rule</Button>;
+  const submit = async () => {
+    if (!f.threshold || !f.title.trim() || !/^https?:\/\//.test(f.url) || !f.verified) return void toast.error("Threshold, source title, source URL (http/https) and verification date are required.");
+    const { error } = await supabase.from("lender_rules").insert({ product_id: productId, rule_key: f.key, bureau: f.bureau, score_model: f.key === "min_score" ? f.model : null, lookback_months: f.lookback ? Number(f.lookback) : null, threshold: Number(f.threshold), source_tier: f.tier, source_title: f.title.slice(0, 200), source_url: f.url.slice(0, 500), verified_on: f.verified, effective_date: f.effective || null, stale_after_days: Number(f.stale) || 180, proposed_by: me });
+    if (error) toast.error(error.message); else { toast.success("Proposed — owner approval required before it affects matching"); setOpen(false); onDone(); }
+  };
+  return <div className="mt-2 grid gap-2 rounded bg-muted p-3 sm:grid-cols-3">
+    <Select value={f.key} onValueChange={(v) => setF({ ...f, key: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{RULE_KEYS.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
+    <Select value={f.bureau} onValueChange={(v) => setF({ ...f, bureau: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["experian", "equifax", "transunion", "any"].map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
+    {f.key === "min_score" && <Select value={f.model} onValueChange={(v) => setF({ ...f, model: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SCORE_MODELS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>}
+    {f.key === "max_inquiries" && <Input placeholder="Lookback months (e.g. 6)" value={f.lookback} onChange={(e) => setF({ ...f, lookback: e.target.value })} />}
+    <Input placeholder="Threshold" value={f.threshold} onChange={(e) => setF({ ...f, threshold: e.target.value })} />
+    <Select value={f.tier} onValueChange={(v) => setF({ ...f, tier: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="verified_primary">Verified primary source</SelectItem><SelectItem value="secondary_source">Secondary source (estimate)</SelectItem><SelectItem value="observational">Observational (estimate)</SelectItem></SelectContent></Select>
+    <Input placeholder="Source title (exact document)" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
+    <Input placeholder="Source URL" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} />
+    <label className="text-xs">Verified on<Input type="date" value={f.verified} onChange={(e) => setF({ ...f, verified: e.target.value })} /></label>
+    <label className="text-xs">Effective date<Input type="date" value={f.effective} onChange={(e) => setF({ ...f, effective: e.target.value })} /></label>
+    <label className="text-xs">Stale after (days)<Input value={f.stale} onChange={(e) => setF({ ...f, stale: e.target.value })} /></label>
+    <div className="flex gap-2"><Button size="sm" onClick={submit}>Submit for approval</Button><Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button></div>
+  </div>;
+}
+
+type Data = { lenders: { id: string; name: string }[]; products: { id: string; lender_id: string; name: string; product_type: string; published_min_amount: number | null; published_max_amount: number | null; amount_kind: string; pull_type: string }[]; rules: RuleT[]; shortlists: { id: string; name: string; product_ids: string[] }[] };
+
+function Compare({ ids, data, clear }: { ids: string[]; data: Data; clear: () => void }) {
+  if (ids.length < 2) return null;
+  const ps = ids.map((id) => data.products.find((p) => p.id === id)!).filter(Boolean);
+  return <Card><CardHeader className="flex-row items-center justify-between space-y-0"><CardTitle className="label-caps">Side-by-side comparison</CardTitle><Button size="sm" variant="ghost" onClick={clear}>Clear</Button></CardHeader><CardContent className="overflow-x-auto">
+    <table className="w-full min-w-[560px] text-sm"><thead><tr><th className="p-2 text-left text-muted-foreground">Attribute</th>{ps.map((p) => <th key={p.id} className="p-2 text-left">{data.lenders.find((l) => l.id === p.lender_id)?.name}<div className="text-xs font-normal">{p.name}</div></th>)}</tr></thead>
+      <tbody className="divide-y">
+        <tr><td className="p-2 text-muted-foreground">Type</td>{ps.map((p) => <td key={p.id} className="p-2">{p.product_type.replace(/_/g, " ")}</td>)}</tr>
+        <tr><td className="p-2 text-muted-foreground">Published range</td>{ps.map((p) => <td key={p.id} className="p-2">{fmtMoney(p.published_min_amount)} – {fmtMoney(p.published_max_amount)} <div className="text-xs text-muted-foreground">{p.amount_kind.replace("_", " ")}</div></td>)}</tr>
+        <tr><td className="p-2 text-muted-foreground">Pull</td>{ps.map((p) => <td key={p.id} className="p-2">{p.pull_type.replace("_", " ")}</td>)}</tr>
+        {RULE_KEYS.map(([k, l]) => <tr key={k}><td className="p-2 text-muted-foreground">{l}</td>{ps.map((p) => { const r = data.rules.filter((x) => x.product_id === p.id && x.rule_key === k && x.approval_status === "active"); return <td key={p.id} className="p-2 text-xs">{r.length ? r.map((x) => <div key={x.id}>{x.threshold}{x.score_model ? ` (${x.score_model}, ${x.bureau})` : ""} <span className="text-muted-foreground">· {x.source_tier.replace(/_/g, " ")} · {fmtDate(x.verified_on)}</span></div>) : <span className="text-muted-foreground">Unknown</span>}</td>; })}</tr>)}
+      </tbody></table>
+  </CardContent></Card>;
+}
+
+function Shortlists({ data, compare, onLoad, onDone }: { data: Data; compare: string[]; onLoad: (ids: string[]) => void; onDone: () => void }) {
+  const [name, setName] = useState("");
+  const save = async () => { if (!name.trim() || !compare.length) return void toast.error("Tick products to compare, then name the shortlist"); const { error } = await supabase.from("shortlists").insert({ name: name.slice(0, 60), product_ids: compare }); if (error) toast.error(error.message); else { setName(""); onDone(); } };
+  return <Card><CardHeader><CardTitle className="label-caps">Saved shortlists</CardTitle></CardHeader><CardContent className="space-y-2">
+    <div className="flex flex-wrap gap-2">{data.shortlists.map((s) => <span key={s.id} className="flex items-center"><Button size="sm" variant="secondary" onClick={() => onLoad(s.product_ids)}>{s.name} ({s.product_ids.length})</Button><Button size="sm" variant="ghost" aria-label="Delete" onClick={async () => { await supabase.from("shortlists").delete().eq("id", s.id); onDone(); }}>×</Button></span>)}</div>
+    <div className="flex gap-2"><Input placeholder="Shortlist name" value={name} onChange={(e) => setName(e.target.value)} /><Button variant="outline" onClick={save}>Save {compare.length} selected</Button></div>
+  </CardContent></Card>;
+}

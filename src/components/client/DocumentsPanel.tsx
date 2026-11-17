@@ -26,7 +26,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
   const upload = async () => {
     if (!files.length) return;
     const bad = files.filter((f) => (category === "credit_reports" ? f.type !== "application/pdf" : !ALLOWED.includes(f.type)));
-    if (bad.length) return toast.error(category === "credit_reports" ? "Credit reports must be PDF files." : "Only PDF, JPG or PNG files are accepted.");
+    if (bad.length) return void toast.error(category === "credit_reports" ? "Credit reports must be PDF files." : "Only PDF, JPG or PNG files are accepted.");
     setBusy(true);
     const batch = crypto.randomUUID();
     let ok = 0;
@@ -50,16 +50,16 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
 
   const view = async (d: { id: string; storage_path: string }) => {
     const { data, error } = await supabase.storage.from("client-documents").createSignedUrl(d.storage_path, 60);
-    if (error || !data) return toast.error("Access denied");
+    if (error || !data) return void toast.error("Access denied");
     await supabase.rpc("log_event", { _action: "view", _entity: "document", _entity_id: d.id, _client_id: clientId, _meta: {} });
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const remove = async (d: { id: string; storage_path: string }) => {
     const s = await supabase.storage.from("client-documents").remove([d.storage_path]);
-    if (s.error) return toast.error("Could not delete file");
+    if (s.error) return void toast.error("Could not delete file");
     const { error } = await supabase.from("documents").delete().eq("id", d.id);
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     toast.success("Permanently deleted");
     qc.invalidateQueries({ queryKey: ["documents", clientId] });
   };
