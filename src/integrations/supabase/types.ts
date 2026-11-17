@@ -1311,6 +1311,10 @@ export type Database = {
         Args: { _email: string; _uid: string }
         Returns: undefined
       }
+      has_client_consent: {
+        Args: { _cid: string; _uid: string }
+        Returns: boolean
+      }
       has_perm: { Args: { _perm: string; _uid: string }; Returns: boolean }
       has_role: {
         Args: {
