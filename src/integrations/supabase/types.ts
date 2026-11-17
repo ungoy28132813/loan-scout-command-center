@@ -84,7 +84,7 @@ export type Database = {
           approved_term_months: number | null
           client_id: string
           created_at: string
-          created_by: string
+          created_by: string | null
           denial_bureau: string | null
           denial_reason: string | null
           denial_score_model: string | null
@@ -105,7 +105,7 @@ export type Database = {
           approved_term_months?: number | null
           client_id: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           denial_bureau?: string | null
           denial_reason?: string | null
           denial_score_model?: string | null
@@ -126,7 +126,7 @@ export type Database = {
           approved_term_months?: number | null
           client_id?: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           denial_bureau?: string | null
           denial_reason?: string | null
           denial_score_model?: string | null
