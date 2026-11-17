@@ -9,7 +9,7 @@ export const MAX_PAGES = 80;
 export const TIMEOUT_MS = 90_000;
 
 export class PdfReadError extends Error {
-  constructor(public kind: "too_large" | "encrypted" | "invalid" | "timeout", msg: string) { super(msg); }
+  constructor(public kind: "too_large" | "encrypted" | "invalid" | "timeout" | "ocr_failed", msg: string) { super(msg); }
 }
 
 export async function extractPdfText(data: ArrayBuffer, onProgress?: (done: number, total: number) => void): Promise<{ pages: PageText[]; truncated: boolean }> {

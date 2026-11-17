@@ -5,7 +5,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | Section | Scope | State |
 | --- | --- | --- |
 | 01 | Security, identity and consent | **completed** — available scope verified; two external capability blockers below |
-| 02 | Credit PDF / OCR | queued |
+| 02 | Credit PDF / OCR | **completed** — local English OCR and verified-analysis scope verified; documented scan/layout limits below |
 | 03 | Lender Catalog / Research | queued |
 | 04 | Underwriting Rules / Questionnaires | queued |
 | 05 | Funding Planning / Simulators | queued |
@@ -54,4 +54,36 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 
 ### Deferred to later queue sections
 
-OCR, lender research, further underwriting inputs, simulators, guided applications/outcomes, exports, bureau-pull intelligence, analytics, and final readiness remain in their ordered queued sections. No source rule was approved and nothing was published.
+Lender research, further underwriting inputs, simulators, guided applications/outcomes, exports, bureau-pull intelligence, analytics, and final readiness remain in their ordered queued sections. No source rule was approved and nothing was published.
+
+## Section 02 — Credit PDF / OCR and verified report analysis
+
+**State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified.
+
+### Implemented and verified
+
+- Added browser-local OCR for image-only and image-only pages in mixed PDFs using bundled pdf.js/Tesseract workers, WASM cores, and English language data under `public/ocr/`. No CDN, external AI, cloud OCR, report-image upload, or report-text logging is used.
+- Preserved 25 MB / 80-page PDF limits and added a 20-scanned-page OCR cap with explicit truncation warnings. Clear failures cover unreadable/blank scans and advise a clearer upright English scan or text-based PDF. OCR values retain original text-layer provenance, page citations, low confidence, and mandatory review.
+- Expanded deterministic parsing for explicit per-bureau inquiry summaries and dated listings across 30 days, 3/6/12/24 months, late/delinquent accounts, collections, charge-offs, and bankruptcy presence/filing age. Missing or ambiguous evidence remains Unknown; impossible dates are rejected.
+- Dated inquiries are counted individually without assumed deduplication. Repeated same-bureau account identities stay separate for review; missing accounts are never interpreted as deletions. Balances, limits, utilization, lates, collections, and charge-offs remain bureau-specific.
+- Added additive database validation for OCR provenance and new structured fields. Client staging still requires ownership, current consent, matching private PDF identity, masked account endings, size/schema checks, and staff import/acceptance. Raw text and unsupported keys are rejected.
+- Added atomic staff whole-report acceptance, account-level confirmation/correction with required reasons, page citations, and staff-only correction audits containing changed field names but not old/new account values.
+- Validated updates create fresh internal strict match runs when the staff member also has Run matching permission. Existing reports, published snapshots, and prior match runs are not rewritten; nothing auto-publishes. Staff without that permission are told who must recalculate.
+- Preserved combined and separate report handling, sequential batch uploads, exact score model/bureau separation, historical comparisons, utilization scenarios, private files, and owner-only lender-rule approval.
+
+### Acceptance results — 2026-11-17
+
+- **68/68 application tests passed across 9 files**, including synthetic single/three-bureau fixtures, all inquiry windows, adverse evidence, duplicate caution, impossible dates, OCR provenance/failure, payload privacy, page/size limits, utilization, matching, and public routing.
+- **TypeScript check passed.** Preview builds reported **build OK** during implementation; final build status is checked before commit.
+- **41/41 targeted rollback-only database checks passed:** 18 new Section 02 checks plus all 23 pre-existing client-extraction checks. They cover consent, cross-tenant denial, raw-text/invalid-payload rejection, unverified staging, staff-only import/acceptance/correction, correction audits, OCR provenance, and no automatic publication. The other Section 01 suites were not re-run in this section.
+- **Real Chromium synthetic PDF checks passed:** a text PDF used no OCR; an image-only PDF produced the expected synthetic Experian FICO 8 score 702, three fields, and a $1,200 / $5,000 revolving account with low-confidence review flags; a blank image PDF remained unreadable with zero extracted values. **Zero external requests** occurred during extraction/OCR, and no browser page errors occurred.
+- **Full synthetic owner workflow passed twice:** create DEMO client and personal goal, upload scanned PDF, local OCR, review, whole-read acceptance, internal match recalculation, account correction, and correction-history readback. The final run created two fresh internal match runs across acceptance and correction, retained Needs Review results with no approved lender rules, and published nothing.
+- **Basic security scan completed with no findings.** This is not deep code analysis or production certification.
+- Cleanup verified after both workflows: private synthetic files were deleted through the owner UI, both synthetic clients were removed, and the final database check found zero synthetic clients/documents, zero active lender rules, 13 preserved source-review candidates, and zero published snapshots.
+
+### Documented limits
+
+- OCR supports **English only**, at most **20 scanned pages per PDF**, and clear upright scans. Non-English, rotated, low-quality, heavily redacted, or unusually formatted reports may require manual entry or a text-based PDF; no unsupported language is guessed.
+- Parser layouts are best-effort for SmartCredit, IdentityIQ, MyScoreIQ, and similar reports, not a claim to support every provider layout. Unreadable fields remain Unknown and automatic reads never become verified without staff action.
+- A separate live client-browser upload session was not run in this section; client staging and cross-tenant boundaries were exercised by the rollback-only database suite. The actual owner browser workflow and local OCR pipeline were run end to end.
+- No lender-specific utilization simulation or lender rule approval was added. No real client report, credential, external OCR service, or public deployment was used.

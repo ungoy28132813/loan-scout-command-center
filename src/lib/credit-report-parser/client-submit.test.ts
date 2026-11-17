@@ -14,6 +14,8 @@ describe("client extraction submission boundary", () => {
     expect(serialized).not.toContain("evidence");
     expect(serialized).not.toContain("warnings");
     expect(serialized).not.toContain("reconcileKey");
+    expect(serialized).not.toContain("rawText");
+    expect(payload.ocrUsed).toBe(false);
     expect(serialized).not.toContain("123-45-6789");
     expect(serialized).not.toContain("123456789012");
     for (const line of payload.tradelines) expect(Object.keys(line)).not.toContain("reconcileKey");
@@ -29,13 +31,22 @@ describe("client extraction submission boundary", () => {
   });
 
   it("submits an unreadable status with no invented zero scores or accounts", () => {
-    const result: ParseResult = { parserVersion: "ls-parse-1.0.0", provider: "unknown", bureausDetected: [], reportType: "unknown", reportDate: null, pageCount: 2, hasTextLayer: false, scores: [], fields: [], tradelines: [], warnings: ["No text layer"], status: "unreadable" };
+    const result: ParseResult = { parserVersion: "ls-parse-1.1.0", provider: "unknown", bureausDetected: [], reportType: "unknown", reportDate: null, pageCount: 2, hasTextLayer: false, ocrUsed: true, scores: [], fields: [], tradelines: [], warnings: ["No text layer"], status: "unreadable" };
     const payload = buildClientExtractionPayload(result);
     expect(payload.status).toBe("unreadable");
     expect(payload.scores).toEqual([]);
     expect(payload.fields).toEqual([]);
     expect(payload.tradelines).toEqual([]);
     expect(JSON.stringify(payload)).not.toContain("No text layer");
+  });
+
+  it("stages OCR and adverse-account flags as structured unverified values only", () => {
+    const result = parseReportText(F.chargeoffEvidence, { originalHasTextLayer: false, ocrPages: [1] });
+    const payload = buildClientExtractionPayload(result);
+    expect(payload.ocrUsed).toBe(true);
+    expect(payload.hasTextLayer).toBe(false);
+    expect(payload.tradelines[0]).toMatchObject({ lateCount: 2, isChargeoff: true, isCollection: false, needsReview: true });
+    expect(JSON.stringify(payload)).not.toMatch(/evidence|warnings|rawText|Charge-off"\]/);
   });
 
   it("keeps only four account-ending digits and no free-text evidence", () => {

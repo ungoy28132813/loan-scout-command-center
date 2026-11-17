@@ -37,5 +37,7 @@ export function parseDate(s: string | undefined | null): string | null {
   if (!m) return null;
   const [mo, d, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (mo < 1 || mo > 12 || d < 1 || d > 31 || y < 1990 || y > 2100) return null;
-  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const iso = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const date = new Date(`${iso}T00:00:00Z`);
+  return date.getUTCFullYear() === y && date.getUTCMonth() + 1 === mo && date.getUTCDate() === d ? iso : null;
 }

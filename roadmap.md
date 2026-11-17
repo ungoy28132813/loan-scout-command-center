@@ -2,12 +2,14 @@
 ## Build queue — current
 - [x] Section 01: security, identity, consent; audit and test owner/employee/client boundaries
 - [x] Section 01: safely available fixes, acceptance results, blockers, verification and cleanup (docs/BUILD_QUEUE.md)
-- [ ] Sections 02–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
+- [x] Section 02: browser-local OCR, evidence parsing, review acceptance, and validated-match recomputation
+- [x] Section 02: final build log, cleanup verification, and commit (tests and documentation complete)
+- [ ] Sections 03–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
 ## Phase 1 — open
 - [x] Install original Loan Scout LLC logo (public/loan-scout-approved-logo.webp)
 - [x] Automated credit-report PDF extraction — browser-local, text-layer PDFs, best effort
-- [ ] OCR for scanned/image-only reports (not built; flagged as unreadable)
-- [ ] Review-confirm action for automatically read accounts
+- [x] OCR for scanned/image-only reports — browser-local English OCR, 20 scanned-page cap, mandatory review
+- [x] Review-confirm action for automatically read accounts — atomic staff acceptance and audited corrections
 - [x] Signed-in end-to-end upload test — owner session, DEMO client, synthetic 3-bureau PDF read in browser
 - [ ] Passkey sign-in
 - [ ] Forced remote sign-out on deactivation

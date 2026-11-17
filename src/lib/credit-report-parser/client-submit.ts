@@ -10,11 +10,12 @@ export interface ClientExtractionPayload {
   reportDate: string | null;
   pageCount: number;
   hasTextLayer: boolean;
+  ocrUsed: boolean;
   bureausDetected: Bureau[];
   status: ParseResult["status"];
   scores: { bureau: Bureau; model: string | null; value: number; scoreDate: string | null; sourcePage: number; confidence: Confidence; needsReview: boolean }[];
   fields: { bureau: Bureau; key: string; value: number; sourcePage: number; confidence: Confidence; needsReview: boolean }[];
-  tradelines: { bureau: Bureau; creditor: string; last4: string | null; accountType: string | null; balance: number | null; creditLimit: number | null; isOpen: boolean | null; isCollection: boolean; sourcePage: number; needsReview: boolean }[];
+  tradelines: { bureau: Bureau; creditor: string; last4: string | null; accountType: string | null; balance: number | null; creditLimit: number | null; isOpen: boolean | null; lateCount: number | null; isCollection: boolean; isChargeoff: boolean; sourcePage: number; needsReview: boolean }[];
 }
 
 export function buildClientExtractionPayload(r: ParseResult): ClientExtractionPayload {
@@ -25,11 +26,12 @@ export function buildClientExtractionPayload(r: ParseResult): ClientExtractionPa
     reportDate: r.reportDate,
     pageCount: r.pageCount,
     hasTextLayer: r.hasTextLayer,
+    ocrUsed: r.ocrUsed,
     bureausDetected: [...r.bureausDetected],
     status: r.status,
     scores: r.scores.map((s) => ({ bureau: s.bureau, model: s.model, value: s.value, scoreDate: s.scoreDate, sourcePage: s.page, confidence: s.confidence, needsReview: s.needsReview })),
     fields: r.fields.map((f) => ({ bureau: f.bureau, key: f.key, value: f.value, sourcePage: f.page, confidence: f.confidence, needsReview: f.needsReview })),
-    tradelines: r.tradelines.map((t) => ({ bureau: t.bureau, creditor: t.creditor, last4: t.last4, accountType: t.accountType, balance: t.balance, creditLimit: t.creditLimit, isOpen: t.isOpen, isCollection: t.isCollection, sourcePage: t.page, needsReview: t.needsReview })),
+    tradelines: r.tradelines.map((t) => ({ bureau: t.bureau, creditor: t.creditor, last4: t.last4, accountType: t.accountType, balance: t.balance, creditLimit: t.creditLimit, isOpen: t.isOpen, lateCount: t.lateCount, isCollection: t.isCollection, isChargeoff: t.isChargeoff, sourcePage: t.page, needsReview: t.needsReview })),
   };
 }
 

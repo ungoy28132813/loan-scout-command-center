@@ -53,14 +53,22 @@ export const RULE_KEYS = [
 ] as const;
 export const SCORE_MODELS = ["FICO 8", "FICO 9", "FICO 10", "FICO 10T", "FICO Bankcard 8", "FICO Auto 8", "FICO 2 (Experian)", "FICO 5 (Equifax)", "FICO 4 (TransUnion)", "VantageScore 3.0", "VantageScore 4.0"];
 export const REPORT_FIELDS = [
+  ["inquiries_30d", "Hard inquiries (30 days)"],
+  ["inquiries_3mo", "Hard inquiries (3 mo)"],
   ["inquiries_6mo", "Hard inquiries (6 mo)"],
   ["inquiries_12mo", "Hard inquiries (12 mo)"],
+  ["inquiries_24mo", "Hard inquiries (24 mo)"],
   ["open_tradelines", "Open tradelines"],
   ["utilization_pct", "Revolving utilization %"],
+  ["late_30_count", "30-day late payments"],
+  ["late_60_count", "60-day late payments"],
+  ["late_90_count", "90-day late payments"],
   ["late_payments_24mo", "Late payments (24 mo)"],
+  ["delinquent_accounts_count", "Currently delinquent accounts"],
   ["collections_count", "Collections"],
+  ["chargeoffs_count", "Charge-offs"],
   ["bankruptcy_on_file", "Bankruptcy on file (1 = yes, 0 = no)"],
-  ["months_since_bankruptcy", "Months since bankruptcy"],
+  ["months_since_bankruptcy", "Months since bankruptcy filing"],
 ] as const;
 export const fmtMoney = (n: number | null | undefined) => n == null ? "Unknown" : `$${Number(n).toLocaleString()}`;
 export const fmtDate = (s: string | null | undefined) => s ? new Date(s).toLocaleDateString() : "—";

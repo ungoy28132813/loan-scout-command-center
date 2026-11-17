@@ -72,3 +72,55 @@ DEMO CREDIT UNION
 Account #: XXXXXXXX
 Balance: $50
 Account Status: Collection`)];
+
+export const datedEvidence: PageText[] = [pg(1, `IdentityIQ 3-Bureau Credit Report (SYNTHETIC)
+Report Date: 11/01/2026
+TransUnion   Experian   Equifax
+FICO Score 8
+Credit Score:   690   701   705
+Inquiries (last 6 months):   4   1   0
+30 Day Late Payments:   1   0   0
+60 Day Late Payments:   0   0   0
+90 Day Late Payments:   0   0   0
+Collections:   1   0   0
+Charge-offs:   1   0   0
+Bankruptcy On File:   Yes   No   --
+Bankruptcy Filed Date:   01/15/2024   --   --`), pg(2, `TransUnion
+Inquiries
+10/15/2026 DEMO BANK
+10/15/2026 DEMO BANK
+08/15/2026 DEMO CARD
+05/15/2026 DEMO AUTO
+11/15/2025 DEMO BANK
+11/15/2024 DEMO BANK
+Accounts
+TransUnion   Experian   Equifax
+DEMO CARD
+Account #: XXXXXXXX1111   XXXXXXXX1111   XXXXXXXX1111
+Account Type:   Revolving   Revolving   Revolving
+Balance:   $1,200   $1,200   $1,200
+Credit Limit:   $5,000   $5,000   $5,000
+30 Day Lates:   1   0   0
+60 Day Lates:   0   0   0
+90 Day Lates:   0   0   0
+Account Status:   Open   Open   Open`)];
+
+export const chargeoffEvidence: PageText[] = [pg(1, `Experian Credit Report (SYNTHETIC)
+Report Date: 10/01/2026
+DEMO RECOVERY
+Account #: XXXXXXXX2222
+Account Type: Other
+Balance: $450
+Late Payments: 2
+Account Status: Charge-off`)];
+
+export const duplicateBureauAccount: PageText[] = [pg(1, `TransUnion Credit Report (SYNTHETIC)
+TransUnion
+DEMO BANK
+Account #: XXXXXXXX1111
+Balance: $100
+DEMO BANK
+Account #: XXXXXXXX1111
+Balance: $100`)];
+
+export const unreadableOcr: PageText[] = [{ page: 1, lines: [" "] }];

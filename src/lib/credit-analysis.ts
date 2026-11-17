@@ -66,7 +66,7 @@ export interface SnapshotComparison {
   excludedUnverified: number;
 }
 
-const SUMMARY_KEYS = new Set(["inquiries_6mo", "inquiries_12mo", "late_payments_24mo", "collections_count", "open_tradelines"]);
+const SUMMARY_KEYS = new Set(["inquiries_30d", "inquiries_3mo", "inquiries_6mo", "inquiries_12mo", "inquiries_24mo", "late_30_count", "late_60_count", "late_90_count", "late_payments_24mo", "delinquent_accounts_count", "collections_count", "chargeoffs_count", "open_tradelines"]);
 const round = (n: number) => Math.round(n * 100) / 100;
 const numericChange = (earlier: number | null, later: number | null, earlierPage: number | null = null, laterPage: number | null = null): NumericChange => ({
   earlier, later, earlierPage, laterPage,

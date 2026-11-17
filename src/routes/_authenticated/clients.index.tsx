@@ -62,7 +62,7 @@ function Clients() {
       <Card><CardContent className="p-0">
         {rows.length === 0 ? (q.data?.clients.length === 0 ? <div className="space-y-3 p-6">
           <h2 className="font-display text-3xl">{me?.primary === "owner" ? "Start with your first client" : "No assigned clients yet"}</h2>
-          <p className="max-w-2xl text-sm text-muted-foreground">{me?.primary === "owner" ? "Create a client file to upload documents, read text-based credit PDFs locally, review the evidence and prepare a match run. Use DEMO for synthetic testing only." : "The owner assigns clients to you. You’ll see only those files here, with the permissions granted to your account."}</p>
+          <p className="max-w-2xl text-sm text-muted-foreground">{me?.primary === "owner" ? "Create a client file to upload documents, read text-based or scanned credit PDFs locally, review the evidence and prepare a match run. Use DEMO for synthetic testing only." : "The owner assigns clients to you. You’ll see only those files here, with the permissions granted to your account."}</p>
           {me?.primary === "owner" && <NewClient label="Add your first client" />}
         </div> : <div className="flex flex-wrap items-center justify-between gap-3 p-6"><p className="text-sm text-muted-foreground">No clients match these filters.</p><Button size="sm" variant="outline" onClick={() => setF(DEFAULT)}>Reset filters</Button></div>) :
           <ul className="divide-y">{rows.map((c) => <li key={c.id}><Link to="/clients/$clientId" params={{ clientId: c.id }} className="flex flex-wrap items-center justify-between gap-2 p-4 hover:bg-muted">

@@ -5,6 +5,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ParseResult } from "./types";
 
+export type ReadProgress = (done: number, total: number, stage?: "text" | "ocr") => void;
+
 export async function saveExtraction(reportId: string, clientId: string, r: ParseResult): Promise<{ ok: true } | { ok: false; error: string }> {
   const [f, t, rep] = await Promise.all([
     supabase.from("report_fields").select("id", { count: "exact", head: true }).eq("report_id", reportId),
@@ -20,11 +22,11 @@ export async function saveExtraction(reportId: string, clientId: string, r: Pars
     ...r.fields.map((x) => ({ report_id: reportId, client_id: clientId, bureau: x.bureau, field_key: x.key, score_model: null, value: x.value, status: "extracted", source_ref: x.evidence, source_page: x.page, confidence: x.confidence, needs_review: x.needsReview, score_date: null })),
   ];
   if (fieldRows.length) { const e = await supabase.from("report_fields").insert(fieldRows); if (e.error) return { ok: false, error: e.error.message }; }
-  const tlRows = r.tradelines.map((x) => ({ report_id: reportId, client_id: clientId, bureau: x.bureau, creditor: x.creditor.slice(0, 80), account_type: x.accountType, account_ref_last4: x.last4, balance: x.balance, credit_limit: x.creditLimit, is_open: x.isOpen, late_count: null, is_collection: x.isCollection, reconcile_key: x.reconcileKey.startsWith("blk:") ? `${reportId}:${x.reconcileKey}` : x.reconcileKey, source_page: x.page, needs_review: x.needsReview, extracted: true }));
+  const tlRows = r.tradelines.map((x) => ({ report_id: reportId, client_id: clientId, bureau: x.bureau, creditor: x.creditor.slice(0, 80), account_type: x.accountType, account_ref_last4: x.last4, balance: x.balance, credit_limit: x.creditLimit, is_open: x.isOpen, late_count: x.lateCount, is_collection: x.isCollection, is_chargeoff: x.isChargeoff, reconcile_key: x.reconcileKey.startsWith("blk:") ? `${reportId}:${x.reconcileKey}` : x.reconcileKey, source_page: x.page, needs_review: x.needsReview, extracted: true }));
   if (tlRows.length) { const e = await supabase.from("tradelines").insert(tlRows); if (e.error) return { ok: false, error: e.error.message }; }
 
   const summary = {
-    parser_version: r.parserVersion, pages: r.pageCount, text_layer: r.hasTextLayer, bureaus: r.bureausDetected,
+    parser_version: r.parserVersion, pages: r.pageCount, text_layer: r.hasTextLayer, ocr_used: r.ocrUsed, bureaus: r.bureausDetected,
     scores: r.scores.length, fields: r.fields.length, tradelines: r.tradelines.length,
     needs_review: r.scores.filter((s) => s.needsReview).length + r.fields.filter((s) => s.needsReview).length + r.tradelines.filter((s) => s.needsReview).length,
     warnings: r.warnings.slice(0, 20),
@@ -38,15 +40,28 @@ export async function saveExtraction(reportId: string, clientId: string, r: Pars
 }
 
 /** Download from the private bucket (RLS/storage policy enforced) and parse locally in this browser. */
-export async function extractStoredReport(storagePath: string, onProgress?: (d: number, t: number) => void) {
+export async function extractStoredReport(storagePath: string, onProgress?: ReadProgress) {
   const dl = await supabase.storage.from("client-documents").download(storagePath);
   if (dl.error || !dl.data) throw new Error("Could not open the stored file.");
   return extractFile(await dl.data.arrayBuffer(), onProgress);
 }
 
-export async function extractFile(buf: ArrayBuffer, onProgress?: (d: number, t: number) => void) {
-  const { extractPdfText } = await import("./pdf");
-  const { parseReportText } = await import("./parse");
-  const { pages, truncated } = await extractPdfText(buf, onProgress);
-  return parseReportText(pages, { truncated });
+export async function extractFile(buf: ArrayBuffer, onProgress?: ReadProgress): Promise<ParseResult> {
+  const [{ extractPdfText }, { hasTextLayer }, { parseReportText }] = await Promise.all([import("./pdf"), import("./detect"), import("./parse")]);
+  const ocrBuffer = buf.slice(0); // pdf.js transfers its input to a worker, which detaches the original buffer.
+  const text = await extractPdfText(buf, (done, total) => onProgress?.(done, total, "text"));
+  const originalHasTextLayer = hasTextLayer(text.pages);
+  const needsOcr = text.pages.filter((page) => page.lines.join("").replace(/\s/g, "").length < 10).map((page) => page.page);
+  let pages = text.pages;
+  let ocrPages: number[] = [];
+  let ocrTruncated = false;
+  if (needsOcr.length) {
+    const { ocrPdfPages } = await import("./ocr");
+    const ocr = await ocrPdfPages(ocrBuffer, needsOcr, (done, total) => onProgress?.(done, total, "ocr"));
+    const byPage = new Map(ocr.pages.map((page) => [page.page, page]));
+    pages = text.pages.map((page) => byPage.get(page.page) ?? page);
+    ocrPages = ocr.pages.map((page) => page.page);
+    ocrTruncated = ocr.skippedPages > 0;
+  }
+  return parseReportText(pages, { truncated: text.truncated, originalHasTextLayer, ocrPages, ocrTruncated });
 }

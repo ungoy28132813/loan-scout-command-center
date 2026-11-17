@@ -27,7 +27,9 @@ export interface ExtractedTradeline {
   balance: number | null;
   creditLimit: number | null;
   isOpen: boolean | null;
+  lateCount: number | null;
   isCollection: boolean;
+  isChargeoff: boolean;
   reconcileKey: string;
   page: number;
   needsReview: boolean;
@@ -41,7 +43,10 @@ export interface ParseResult {
   reportType: "tri_merge" | Bureau | "unknown";
   reportDate: string | null;
   pageCount: number;
+  /** Whether the original PDF had a usable text layer; OCR does not change this provenance. */
   hasTextLayer: boolean;
+  /** Whether any page was recognized by the bundled browser-local English OCR engine. */
+  ocrUsed: boolean;
   scores: ExtractedScore[];
   fields: ExtractedField[];
   tradelines: ExtractedTradeline[];

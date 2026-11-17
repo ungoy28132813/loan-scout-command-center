@@ -1550,6 +1550,61 @@ export type Database = {
           },
         ]
       }
+      tradeline_corrections: {
+        Row: {
+          changed_fields: string[]
+          client_id: string
+          corrected_by: string
+          created_at: string
+          id: string
+          reason: string
+          source_ref: string | null
+          tradeline_id: string
+        }
+        Insert: {
+          changed_fields?: string[]
+          client_id: string
+          corrected_by: string
+          created_at?: string
+          id?: string
+          reason: string
+          source_ref?: string | null
+          tradeline_id: string
+        }
+        Update: {
+          changed_fields?: string[]
+          client_id?: string
+          corrected_by?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          source_ref?: string | null
+          tradeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tradeline_corrections_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeline_corrections_corrected_by_fkey"
+            columns: ["corrected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeline_corrections_tradeline_id_fkey"
+            columns: ["tradeline_id"]
+            isOneToOne: false
+            referencedRelation: "tradelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tradelines: {
         Row: {
           account_ref_last4: string | null
@@ -1562,6 +1617,7 @@ export type Database = {
           creditor: string
           extracted: boolean
           id: string
+          is_chargeoff: boolean
           is_collection: boolean
           is_open: boolean | null
           late_count: number | null
@@ -1581,6 +1637,7 @@ export type Database = {
           creditor: string
           extracted?: boolean
           id?: string
+          is_chargeoff?: boolean
           is_collection?: boolean
           is_open?: boolean | null
           late_count?: number | null
@@ -1600,6 +1657,7 @@ export type Database = {
           creditor?: string
           extracted?: boolean
           id?: string
+          is_chargeoff?: boolean
           is_collection?: boolean
           is_open?: boolean | null
           late_count?: number | null
@@ -1652,6 +1710,10 @@ export type Database = {
         Args: { _submission_id: string }
         Returns: undefined
       }
+      accept_staff_extraction: {
+        Args: { _report_id: string }
+        Returns: undefined
+      }
       bootstrap_role_decision: {
         Args: { _confirmed: boolean; _email: string }
         Returns: string
@@ -1666,6 +1728,21 @@ export type Database = {
       }
       client_mark_task: {
         Args: { _note: string; _task: string }
+        Returns: undefined
+      }
+      correct_tradeline: {
+        Args: {
+          _balance: number
+          _credit_limit: number
+          _is_chargeoff: boolean
+          _is_collection: boolean
+          _is_open: boolean
+          _late_count: number
+          _reason: string
+          _source_page: number
+          _source_ref: string
+          _tradeline_id: string
+        }
         Returns: undefined
       }
       deactivate_employee: {
