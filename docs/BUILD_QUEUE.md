@@ -10,9 +10,9 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
-| 07 | Client Publishing / Documents / Exports | queued |
-| 08 | Intelligence / Bureau Pulls / Analytics | queued |
-| 09 | Final QA / Readiness | queued |
+| 07 | Client Publishing / Documents / Exports | **partial** — backend done; UI, PDF download test and acceptance unfinished |
+| 08 | Intelligence / Bureau Pulls / Analytics | **not built** — awaiting writer-coordination confirmation |
+| 09 | Final QA / Readiness | **partial** — audit docs written; see FEATURE_ACCEPTANCE.md / SECURITY_READINESS.md |
 
 ## Section 01 — Security, identity and consent
 
