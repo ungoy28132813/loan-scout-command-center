@@ -10,7 +10,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
-| 07 | Client Publishing / Documents / Exports | **partial** — backend done; UI, PDF download test and acceptance unfinished |
+| 07 | Client Publishing / Documents / Exports | **partial** — task-evidence UI, staff verify/view, client PDF button wired; PDF unit tests pass; browser download + DB isolation tests pending |
 | 08 | Intelligence / Bureau Pulls / Analytics | **not built** — awaiting writer-coordination confirmation |
 | 09 | Final QA / Readiness | **partial** — audit docs written; see FEATURE_ACCEPTANCE.md / SECURITY_READINESS.md |
 
@@ -214,3 +214,11 @@ Undisclosed lender calculations and unsupported joint variations intentionally r
 - Monthly metrics are operational counts, not approval probabilities or lender-performance learning. Observed-outcome learning remains Phase 3 and subject to owner review; Q70 detailed outcome design remains undecided.
 - A separate live client-browser session was not used in this section. Client read-only status/date access and denial of outcome-table reads/writes were exercised by rollback database tests; the owner browser workflow was exercised end to end.
 - No automated submission, bureau pull, email/SMS, dashboard notification, reminder, follow-up task, recommendation publication, or public deployment was added. Q73/Q87 remain undecided.
+
+
+## Section 07 checkpoint (2026-11-19)
+- Client tasks: published-only list, optional attachment limited to the client's own uploads via `client_mark_task`.
+- Staff: view supporting document (60s signed URL), verify (server sets verifier/time), reopen.
+- Client plan tab: Prepare/Download PDF via permission-checked `prepare_strategy_export`.
+- Tests: 118/118 unit (new `strategy-pdf.test.ts`: valid PDF, internal note excluded, safe filename); TypeScript clean.
+- NOT yet verified: browser download with synthetic data, rollback cross-client permission checks, production build. Stopped: workspace credits ran out.

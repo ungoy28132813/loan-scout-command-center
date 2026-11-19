@@ -16,9 +16,20 @@ function useList<T>(key: string, clientId: string, table: string, order = "creat
   return useQuery({ queryKey: [key, clientId], queryFn: async () => ((await supabase.from(table as never).select("*").eq("client_id", clientId).order(order, { ascending: false })).data ?? []) as T[] });
 }
 
+function EvidenceLink({ docId }: { docId: string }) {
+  const open = async () => {
+    const w = window.open("", "_blank");
+    const { data: doc } = await supabase.from("documents").select("storage_path").eq("id", docId).maybeSingle();
+    const { data } = doc ? await supabase.storage.from("client-documents").createSignedUrl(doc.storage_path, 60) : { data: null };
+    if (!data?.signedUrl) { w?.close(); return void toast.error("Document unavailable"); }
+    if (w) w.location.href = data.signedUrl;
+  };
+  return <Button size="sm" variant="link" className="h-auto p-0 text-xs" onClick={open}>View supporting document</Button>;
+}
+
 export function ReadinessPanel({ clientId, me }: { clientId: string; me: Me }) {
   const qc = useQueryClient(); const can = me.perms.can_manage_readiness;
-  const q = useList<{ id: string; title: string; description: string | null; published: boolean; status: string; client_note: string | null }>("tasks", clientId, "readiness_tasks");
+  const q = useList<{ id: string; title: string; description: string | null; published: boolean; status: string; client_note: string | null; evidence_document_id: string | null; verified_at: string | null; client_completed_at: string | null }>("tasks", clientId, "readiness_tasks");
   const [t, setT] = useState(""); const [d, setD] = useState("");
   const refresh = () => qc.invalidateQueries({ queryKey: ["tasks", clientId] });
   const upd = async (id: string, patch: Record<string, unknown>) => { const { error } = await supabase.from("readiness_tasks").update(patch as never).eq("id", id); if (error) toast.error(error.message); else refresh(); };
@@ -28,10 +39,13 @@ export function ReadinessPanel({ clientId, me }: { clientId: string; me: Me }) {
       {(q.data ?? []).map((x) => <div key={x.id} className="rounded border p-3 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{x.title}</span><span className="flex items-center gap-2"><StatusBadge value={x.status === "verified" ? "verified" : x.status === "client_marked_done" ? "pending" : "draft"} label={x.status.replace(/_/g, " ")} />
           {can && <label className="flex items-center gap-1 text-xs">Client-visible <Switch checked={x.published} onCheckedChange={(v) => upd(x.id, { published: v })} /></label>}
-          {can && x.status === "client_marked_done" && <Button size="sm" onClick={() => upd(x.id, { status: "verified", verified_by: me.id })}>Verify</Button>}
+          {can && x.status === "client_marked_done" && <Button size="sm" onClick={() => upd(x.id, { status: "verified" })}>Verify</Button>}
           {can && x.status === "client_marked_done" && <Button size="sm" variant="outline" onClick={() => upd(x.id, { status: "open" })}>Reopen</Button>}</span></div>
         {x.description && <p className="mt-1 text-muted-foreground">{x.description}</p>}
         {x.client_note && <p className="mt-1 text-xs">Client note: {x.client_note}</p>}
+        {x.client_completed_at && <p className="mt-1 text-xs text-muted-foreground">Client marked done {fmtDate(x.client_completed_at)}</p>}
+        {x.evidence_document_id && <EvidenceLink docId={x.evidence_document_id} />}
+        {x.verified_at && <p className="mt-1 text-xs text-muted-foreground">Verified {fmtDate(x.verified_at)}</p>}
       </div>)}
       {can && <div className="grid gap-2"><Input placeholder="Action title" value={t} onChange={(e) => setT(e.target.value)} /><Textarea placeholder="Description" value={d} onChange={(e) => setD(e.target.value)} /><Button onClick={add} className="justify-self-start">Add draft task</Button></div>}
     </CardContent></Card>;
