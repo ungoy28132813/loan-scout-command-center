@@ -59,4 +59,4 @@ use the editor.
 - Staff task-evidence views must record document access before navigation and detach the new window's opener. Why: private evidence access must retain the same audit and window isolation as library views.
 - Publication assignment checks run on publication transitions, not metadata-only re-review updates; snapshot client ownership and released content remain immutable. Why: fresh uploads must still flag old recommendations after employee access is revoked.
 - Automatic client imports validate ownership/consent/payloads without changing JWT claims; staff verification is required for matching, and low-confidence fields stay Unknown. Why: automatic receipt must not impersonate review or turn client claims into trusted evidence.
-- Local AI uses an owner-paired outbound worker, public sources and gated aggregates only; output stays advisory. Why: no inbound exposure or report-text transfer.
+- Local AI uses an owner-paired outbound worker; public/gated data and synthetic benchmarks stay advisory. Why: no report transfer or inferred approval.

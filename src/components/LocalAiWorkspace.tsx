@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Alert, AlertDescription } from "./ui/alert";
 import { localAiState, pairLocalAi, requestLocalAi, reviewLocalAi, revokeLocalAi } from "@/lib/local-ai.functions";
 import { adviceSchema, inputSchema, LOCAL_AI_MODEL, workerIsOnline } from "@/lib/local-ai";
+import { buildBenchmarkDownload } from "@/lib/ai-benchmark";
 
 export const localAiQuery = { queryKey: ["local-ai"], queryFn: () => localAiState(), refetchInterval: 15_000 };
 
@@ -48,6 +49,15 @@ export function LocalAiWorkspace() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast.success("Paired setup downloaded. Keep this file private and run it on your Ollama computer.");
   };
+  const downloadBenchmark = async () => {
+    const response = await fetch("/local-ai/benchmark.ps1", { cache: "no-store" });
+    if (!response.ok) throw new Error("Benchmark download unavailable");
+    const script = buildBenchmarkDownload(await response.text());
+    const url = URL.createObjectURL(new Blob([script], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a"); link.href = url; link.download = "LoanScout-Benchmark.ps1"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success("Benchmark downloaded—fictional tests only, no connection credential included");
+  };
 
   return <div className="mx-auto max-w-5xl space-y-6">
     <PageHeader title="Local AI Intelligence" kicker="Loan Scout · owner pilot">
@@ -72,6 +82,11 @@ export function LocalAiWorkspace() {
         <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\\LoanScoutAI\\worker.ps1"'}</code></pre>
         <p>Keep the worker window open; Ctrl+C stops it. No administrator rights or firewall changes. The paired installer contains a private credential until first run—never share it.</p>
       </div></details>
+    </section>
+    <section className="space-y-4 border-b pb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl">Model benchmark</h2><Button variant="outline" disabled={busy} onClick={() => void act(downloadBenchmark)}><Download className="mr-2 h-4 w-4" />Download benchmark</Button></div>
+      <p className="text-sm text-muted-foreground">Fictional accuracy checks, model/bureau separation, source citations, prompt-injection resistance, speed, repeatability, long context and two-request stress. No real reports or hosted AI charges.</p>
+      <details><summary className="cursor-pointer text-sm font-medium">Run benchmark &amp; share results</summary><div className="mt-3 space-y-3 text-sm"><p>Stop the local worker with Ctrl+C first. Save the download in Downloads, then run once in PowerShell:</p><pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\\Downloads\\LoanScout-Benchmark.ps1"'}</code></pre><p>Up to 60 minutes for installed models under 12 GB; stops safely and saves partial results. To include larger models with a 120-minute budget:</p><pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\\Downloads\\LoanScout-Benchmark.ps1" -IncludeLargeModels -MaxMinutes 120'}</code></pre><p>File Explorer opens automatically. Attach benchmark_results.json and benchmark_metrics.csv here; no passwords or real reports are included. These tests do not certify funding accuracy.</p></div></details>
     </section>
     <section className="space-y-4 border-b pb-6">
       <h2 className="font-display text-2xl">Public-source review</h2>

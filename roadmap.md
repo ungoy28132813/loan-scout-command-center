@@ -1,5 +1,10 @@
 # Loan Scout build roadmap
 
+## Comprehensive AI benchmark (2026-11-20)
+- [x] Add one-download local benchmark for installed models: exact-answer synthetic accuracy, source citations, injection resistance, latency/throughput, context, stability and bounded concurrency
+- [x] Execute benchmark harness self-tests and accessible app/browser tests, document limits and commit
+- [ ] Actual hardware/model benchmark awaits owner running the private-computer command; no remote machine access
+
 ## Local Ollama integration (2026-11-20)
 - [x] Build owner-only public-source AI jobs and privacy-gated verified-outcome context; no report text or automatic policy changes
 - [x] Build revocable outbound Windows worker connection, one-download setup, limits, offline handling and review controls

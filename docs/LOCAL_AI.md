@@ -32,6 +32,7 @@ Start-Process explorer.exe -ArgumentList ('"' + "$env:LOCALAPPDATA\LoanScoutAI" 
 Ctrl+C stops the worker. **Disconnect** in the owner workspace revokes its credential immediately; replacing a connection also revokes older credentials. No production deployment is authorized; this setup points to the HTTPS origin where the download was made.
 
 ## Verification and blockers
+- Comprehensive standalone synthetic model benchmark is available via **Download benchmark**, with one-command execution and automatic results-folder opening. See AI_BENCHMARK.md for exact commands, measured sandbox/harness results and remaining local PC requirements.
 - Authenticated Chromium: pairing, heartbeat, real Wells Fargo BusinessLine official-source retrieval, claim, fabricated-quote rejection (422), synthetic advisory return, owner note review and readback, revocation (401). The worker/model response was simulated, explicitly labeled synthetic; the model was not run remotely on the owner's computer.
 - Desktop and 390px mobile workspace inspected; no horizontal page overflow; no browser page errors. Offline analysis button disabled; unauthenticated endpoint 401.
 - Application suite: 145 tests after the final whitespace-citation regression. New local AI tests cover privacy gating, both terminal outcomes, demo exclusion, payload allowlist, quotes, automatic-mutation rejection, offline status and inference limits.
