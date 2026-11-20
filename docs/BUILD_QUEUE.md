@@ -12,7 +12,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
 | 07 | Client Publishing / Documents / Exports | **completed** — evidence, verification, published-only portal, manual publication and PDF export verified |
 | 08 | Intelligence / Bureau Pulls / Analytics | **partial** — bureau observations, rule coverage and thresholded owner insights verified; AI source analysis blocked |
-| 09 | Final QA / Readiness | **partial** — audit docs written; see FEATURE_ACCEPTANCE.md / SECURITY_READINESS.md |
+| 09 | Final QA / Readiness | **partial** — accuracy fixes and synthetic owner/client/employee browser QA verified; deeper security, abuse controls and remaining acceptance gaps documented |
 
 ## Section 01 — Security, identity and consent
 
@@ -258,3 +258,31 @@ Not done / blocked:
 - Lender source/rule version history verified in browser: Prosper Note Channel shows 4 active Fresh rules plus approved/kept-as-note source items with official links; generic Prosper product correctly shows none.
 - 126 unit tests pass.
 - Still not done: AI-assisted source research (no approved design), Safari/iOS check, client/employee signed-in browser pass, missing source ZIP (not received). Passkeys disabled by backend; forced token revocation unavailable. Not production-certified; unpublished.
+
+## Section 09 — accuracy and role QA acceptance (2026-11-20)
+
+**State: partial.** This evidence supersedes the older client/employee-browser and WebKit-download gaps above, not the remaining production-readiness limitations. No real client data, new policy approvals or public deployment.
+
+Changes:
+- New pure `report-facts.ts` selects the latest dated snapshot for each bureau without reusing missing fields from older snapshots; conflicting aliases/values, ambiguous dates, unreadable latest snapshots and low-confidence fields remain Unknown. `loadFacts` fails closed on evidence-query errors and preserves goal/business scoping.
+- Migration 0040 fixes a reproduced client upload failure after the assigned employee was deactivated: review flags may update published snapshots without treating that metadata change as a new publication. New publication still requires active assigned staff; released content/client ownership immutable. Revoked public execution on eight unused internal guard functions.
+- Migration 0041 replaces automatic processing under forged owner JWT claims with direct ownership/uploader/consent/schema validation. Automatic confirmation does not name a human reviewer, retains page/confidence provenance, does not publish, and unreadable data stays unknown. Owner's automatic-confirm setting is retained with explicit accuracy limitations.
+- Staff task-evidence views audit access before detached-opener navigation to a 60-second private signed PDF. Uploads refresh portal data; report receipts and accuracy warnings now reflect actual automatic processing. Completed missing social metadata on content routes.
+
+Verified:
+- **136/136 unit tests, 17 files**, including 10 synthetic latest-snapshot/confidence tests; latest automatic preview build/typecheck OK. No separate manually invoked production build this checkpoint.
+- **21/21 read-only database tests**: owner bootstrap (12), publication/automatic-processing readiness (9). New durable `tests/sql/publication_rereview_readiness.sql` added. Transaction-writing regression scripts were not rerun through the read-only CLI; no false rollback claim.
+- Real synthetic client Chromium flow: local PDF upload, own-document task attachment, completion note, only published content visible; assigned employee signed-PDF view, audit readback and verification; verification read back in client portal. Other-client navigation/data denied. Actual loadFacts readback: Experian FICO 8=702, open trades=2, collections=0, absent bankruptcy Unknown.
+- Browser permission attempts denied: confidential notes, other client, client self-verification, role escalation, assignment writes, unpublished/other-client completion, draft export, arbitrary private URL; staff unassigned-client read, document deletion and owner-role escalation. Owner employee deactivation immediately suspended existing UI session and blocked document reads.
+- Reproduced post-publication/post-revocation upload failed before migration 0040 and passed after; snapshot review flag true with status/content unchanged. New unassigned publication, released content rewrite and snapshot client reassignment denied. Automatic import after migration 0041 accepted with reviewed_by NULL and human_reviewed=false.
+- Actual approved-only Chromium PDF download parsed with pypdf: valid PDF, citations/date/disclaimer present, planted internal note, hidden draft and other-client name absent. Mobile WebKit download passed; this is not a physical iPhone/Safari-device test.
+- All six client tabs at 390px fit without horizontal overflow; light/dark screenshots inspected; no page errors in client/employee privacy-download flow.
+- Database linter reviewed: allowlist without policies intentional; remaining 25 authenticated security-definer warnings need ongoing authorization review. Basic check reported no findings; current deep scan result not yet available, older results do not certify this code.
+- Cleanup readback: **0 clients/documents/reports/submissions/tasks/snapshots/assignments/private objects/temporary app roles/profiles**. Hosted disposable auth users auto-remove at turn end. Audit records retained. **24 lenders, 49 products, 13 candidates, 4 previously owner-approved active Prosper rules**; no lender data changed in this QA.
+
+Remaining blockers/gaps: passkeys backend-disabled; forced JWT invalidation unavailable (RLS denial tested); AI source interpretation and missing ZIP still separate blocked work; comprehensive uncertainty/tampering policy for automatic confirmations, app-level throttles, large PDF memory/cancellation stress, deep security review, full accessibility and legal/retention/incident-response approval. See SECURITY_READINESS.md. Sections 08/09 are not complete and go-live approval remains required.
+
+## Final deep-review correction (2026-11-20)
+- Completed deep review reported one staff-assignment probe warning and three automatic-verification errors. Migration 0042 restricts caller-selected relationship checks and disables automatic promotion to verified evidence. Automatic receipt/import is retained, but staff acceptance is now required for trusted matching; this safety correction supersedes earlier automatic-confirmation statements above. Owner-requested automation cannot establish independent accuracy of client-supplied readings.
+- Final real synthetic browser check passed: imported submission has no staff reviewer; client verification attempt and another-user assignment probe denied; loadFacts has no scores before staff review and exact Experian FICO 8=702 after authorized owner acceptance. Final synthetic file/client removed; no policies approved or public deployment.
+- Deep findings were addressed and tested locally; a fresh deep rescan is still required before claiming clearance. Sections 08/09 remain partial; passkeys, remote token invalidation, AI interpretation, abuse throttles, large-PDF stress, full accessibility and legal go-live approval remain open.

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/roadmap")({
-  head: () => ({ meta: [{ title: "Roadmap — Loan Scout Matching Tool" }, { name: "description", content: "Built vs planned features." }, { property: "og:title", content: "Roadmap — Loan Scout" }, { property: "og:description", content: "Built vs planned features." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Roadmap — Loan Scout Matching Tool" }, { name: "description", content: "Built vs planned features." }, { property: "og:title", content: "Roadmap — Loan Scout" }, { property: "og:description", content: "Built vs planned features." }] }),
   component: Roadmap,
 });
 

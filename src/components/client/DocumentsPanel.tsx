@@ -65,7 +65,10 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
               if (!submitted.ok) setP(i, "Uploaded, but the automatic read could not be submitted. Assigned staff can read the private PDF.", "warn");
               else if (r.status === "unreadable") setP(i, "Uploaded; local OCR could not read enough English text. Staff can see the unreadable status.", "warn");
               else if (r.status === "awaiting_manual_entry") setP(i, "Uploaded; no reliable values were read. Staff will review the report.", "warn");
-              else setP(i, `Uploaded; ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} sent as unverified for staff review`, "ok");
+              else {
+                const { data: receipt, error: receiptError } = await supabase.from("client_extraction_submissions").select("review_status").eq("report_id", rep.id).maybeSingle();
+                setP(i, `Uploaded; ${r.scores.length} score(s), ${r.fields.length} field(s), ${r.tradelines.length} account entr${r.tradelines.length === 1 ? "y" : "ies"} — ${!receiptError && receipt?.review_status === "accepted" ? "staff verified" : "automatically received; awaiting staff verification"}`, "ok");
+              }
             }
           } catch (e) {
             setP(i, `Uploaded; automatic read failed: ${e instanceof PdfReadError ? e.message : "the PDF could not be read"}`, "warn");
@@ -80,6 +83,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
     qc.invalidateQueries({ queryKey: ["documents", clientId] });
     qc.invalidateQueries({ queryKey: ["reports", clientId] });
     qc.invalidateQueries({ queryKey: ["client-extraction-submissions", clientId] });
+    qc.invalidateQueries({ queryKey: ["client-portal", clientId] });
   };
 
   const view = async (d: { id: string; storage_path: string }) => {
@@ -125,7 +129,7 @@ export function DocumentsPanel({ clientId, me, canUpload, consentOk = true }: { 
               </div>
               <input type="file" multiple accept={category === "credit_reports" ? "application/pdf" : "application/pdf,image/jpeg,image/png"} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-secondary-foreground" />
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? (canAutoRead ? "PDF only. Text and English-language OCR run inside this browser — never sent to an AI or cloud OCR service. OCR reads at most 20 scanned pages and every OCR value needs staff review." : "PDF only.") : "PDF, JPG or PNG."} Max 25 MB / 80 pages each. Stored privately; never publicly linkable.{category === "credit_reports" && me.primary === "client" ? " Your read stays unverified and outside matching until staff accepts it." : ""}</p>
+                <p className="text-xs text-muted-foreground">{category === "credit_reports" ? (canAutoRead ? "PDF only. Text and English-language OCR run inside this browser — never sent to an AI or cloud OCR service. OCR reads at most 20 scanned pages. Read values are received automatically; staff verification is required before matching. Low-confidence, missing or unreadable values stay Unknown." : "PDF only.") : "PDF, JPG or PNG."} Max 25 MB / 80 pages each. Stored privately; never publicly linkable.</p>
                 <Button onClick={upload} disabled={!files.length || busy}><Upload className="mr-2 h-4 w-4" />{busy ? "Uploading…" : `Upload ${files.length || ""}`}</Button>
               </div>
               {progress.length > 0 && <ul aria-live="polite" className="divide-y rounded border text-sm">{progress.map((p, k) => (

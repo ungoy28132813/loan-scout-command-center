@@ -14,7 +14,7 @@ import { StatusBadge, DemoBadge } from "@/components/StatusBadge";
 import { fmtDate } from "@/lib/labels";
 
 export const Route = createFileRoute("/_authenticated/clients/")({
-  head: () => ({ meta: [{ title: "Clients — Loan Scout Matching Tool" }, { name: "description", content: "Client directory." }, { property: "og:title", content: "Clients — Loan Scout" }, { property: "og:description", content: "Client directory." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Clients — Loan Scout Matching Tool" }, { name: "description", content: "Client directory." }, { property: "og:title", content: "Clients — Loan Scout" }, { property: "og:description", content: "Client directory." }] }),
   component: Clients,
 });
 

@@ -8,7 +8,7 @@ import { PublishedStrategy, type SnapshotContent } from "@/components/client/Pub
 import { fmtDate } from "@/lib/labels";
 
 export const Route = createFileRoute("/_authenticated/print/$clientId")({
-  head: () => ({ meta: [{ title: "Funding strategy export — Loan Scout" }, { name: "description", content: "Printable approved strategy." }, { property: "og:title", content: "Strategy export — Loan Scout" }, { property: "og:description", content: "Printable approved strategy." }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Funding strategy export — Loan Scout" }, { name: "description", content: "Printable approved strategy." }, { property: "og:title", content: "Strategy export — Loan Scout" }, { property: "og:description", content: "Printable approved strategy." }, { name: "robots", content: "noindex" }] }),
   component: PrintView,
 });
 

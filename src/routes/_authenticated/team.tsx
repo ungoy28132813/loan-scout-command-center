@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 
 export const Route = createFileRoute("/_authenticated/team")({
-  head: () => ({ meta: [{ title: "Team & Access — Loan Scout Matching Tool" }, { name: "description", content: "Employee permissions and assignments." }, { property: "og:title", content: "Team & Access — Loan Scout" }, { property: "og:description", content: "Employee permissions and assignments." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Team & Access — Loan Scout Matching Tool" }, { name: "description", content: "Employee permissions and assignments." }, { property: "og:title", content: "Team & Access — Loan Scout" }, { property: "og:description", content: "Employee permissions and assignments." }] }),
   component: Team,
 });
 

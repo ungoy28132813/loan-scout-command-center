@@ -21,7 +21,7 @@ import { ApplicationsPanel } from "@/components/client/ApplicationsPanel";
 import { ReadinessPanel, AnnouncementsPanel, NotesPanel } from "@/components/client/OpsPanels";
 
 export const Route = createFileRoute("/_authenticated/clients/$clientId")({
-  head: () => ({ meta: [{ title: "Client file — Loan Scout Matching Tool" }, { name: "description", content: "Client case file." }, { property: "og:title", content: "Client file — Loan Scout" }, { property: "og:description", content: "Client case file." }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Client file — Loan Scout Matching Tool" }, { name: "description", content: "Client case file." }, { property: "og:title", content: "Client file — Loan Scout" }, { property: "og:description", content: "Client case file." }, { name: "robots", content: "noindex" }] }),
   component: ClientFile,
 });
 

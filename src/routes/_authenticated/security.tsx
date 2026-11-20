@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { OrphanFileCleanup } from "@/components/security/OrphanFileCleanup";
 
 export const Route = createFileRoute("/_authenticated/security")({
-  head: () => ({ meta: [{ title: "Security Center — Loan Scout Matching Tool" }, { name: "description", content: "Audit logs and access settings." }, { property: "og:title", content: "Security Center — Loan Scout" }, { property: "og:description", content: "Audit logs and access settings." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Security Center — Loan Scout Matching Tool" }, { name: "description", content: "Audit logs and access settings." }, { property: "og:title", content: "Security Center — Loan Scout" }, { property: "og:description", content: "Audit logs and access settings." }] }),
   component: Security,
 });
 

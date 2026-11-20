@@ -44,7 +44,7 @@ export function ReportsPanel({ clientId, me, activeRuleCount, onChanged }: { cli
   } });
   const submissions = useQuery({
     queryKey: ["client-extraction-submissions", clientId],
-    queryFn: async () => (await supabase.from("client_extraction_submissions").select("id, report_id, review_status, payload, created_at").eq("client_id", clientId).order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("client_extraction_submissions").select("id, report_id, review_status, reviewed_by, payload, created_at").eq("client_id", clientId).order("created_at", { ascending: false })).data ?? [],
   });
   const [sel, setSel] = useState<string | null>(null);
   const [submissionBusy, setSubmissionBusy] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function ReportsPanel({ clientId, me, activeRuleCount, onChanged }: { cli
   const importSubmission = async (id: string) => {
     setSubmissionBusy(id);
     const { error } = await supabase.rpc("import_client_extraction", { _submission_id: id });
-    if (error) toast.error(error.message); else toast.success("Imported once; every value remains unverified and outside matching.");
+    if (error) toast.error(error.message); else toast.success("Imported once; readable values follow the owner's automatic-confirmation policy. Nothing was published.");
     setSubmissionBusy(null); refresh();
   };
   const afterValidatedUpdate = async () => {
@@ -102,11 +102,11 @@ export function ReportsPanel({ clientId, me, activeRuleCount, onChanged }: { cli
 
   return (
     <div className="space-y-4">
-      <Alert><AlertDescription>Text extraction and English-language OCR run <b>inside your browser</b>; report images and text are never sent to an AI or cloud OCR service. OCR is limited to 20 scanned pages and every OCR value requires review. Anything flagged <b>review</b> stays out of matching until staff confirm it. Corrections need a reason and are audited. Unreadable values remain <b>Unknown</b>; nothing is marked verified or published automatically.</AlertDescription></Alert>
+      <Alert><AlertDescription>Text extraction and English-language OCR run <b>inside your browser</b>; report images and text are never sent to an AI or cloud OCR service. OCR is limited to 20 scanned pages. Read values are received automatically, but <b>staff verification is required before matching</b>. Low-confidence or conflicting fields stay <b>Unknown</b>. Check source pages and confidence before relying on a value. Corrections need a reason and are audited. Missing or unreadable values remain <b>Unknown</b>; recommendations are never published automatically.</AlertDescription></Alert>
       {!!submissions.data?.length && <Card>
         <CardHeader><CardTitle className="label-caps">Client automatic reads</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">Clients can parse only their own consented PDFs locally. Import once, correct individual values if needed, or accept the whole read. Nothing enters matching before staff acceptance; publication remains a separate staff decision.</p>
+          <p className="text-xs text-muted-foreground">Clients can parse only their own consented PDFs locally. Successful reads are imported automatically as unverified evidence. Staff must check and accept them before matching. Publication remains a separate staff decision.</p>
           {submissions.data.map((s) => {
             const counts = submissionCounts(s.payload);
             const linked = q.data.reports.find((r) => r.id === s.report_id);
@@ -115,7 +115,7 @@ export function ReportsPanel({ clientId, me, activeRuleCount, onChanged }: { cli
             return <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-3 text-sm">
               <div><div className="font-medium">{name}</div><div className="text-xs text-muted-foreground">{counts.scores} scores · {counts.fields} fields · {counts.tradelines} accounts · {s.review_status.replace(/_/g, " ")} · {fmtDate(s.created_at)}</div></div>
               <div className="flex items-center gap-2">
-                <StatusBadge value={s.review_status === "accepted" ? "verified" : "pending"} label={s.review_status === "accepted" ? "staff accepted" : "unverified client-submitted"} />
+                <StatusBadge value={s.review_status === "accepted" && s.reviewed_by ? "verified" : "pending"} label={s.review_status === "accepted" && s.reviewed_by ? "staff verified" : "awaiting staff verification"} />
                 {s.review_status === "pending_review" && <Button size="sm" variant="secondary" disabled={!canEdit || submissionBusy === s.id} onClick={() => importSubmission(s.id)}>Import for review</Button>}
                 {s.review_status === "imported" && !unreadable && <Button size="sm" disabled={!canEdit || submissionBusy === s.id} onClick={() => acceptSubmission(s.id)}>Accept all & use in matching</Button>}
                 {s.review_status === "imported" && unreadable && <span className="text-xs text-warning">Unreadable — request a searchable PDF</span>}

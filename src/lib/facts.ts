@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { businessCoreAnswers, scopedGoalAnswers, type BusinessFinancialProfile, type GoalType } from "@/lib/business-funding";
-import type { AnswerProvenance, ApplicationMode, Bureau, Facts } from "@/lib/match-engine";
+import type { AnswerProvenance, ApplicationMode, Facts } from "@/lib/match-engine";
+import { selectReportFacts } from "@/lib/report-facts";
 
 const GOAL_SCOPED_PERSONAL_KEYS = new Set([
   "annual_income", "monthly_gross_income", "monthly_debt_payments", "housing_payment",
@@ -40,12 +41,13 @@ export async function loadFacts(clientId: string, goalId: string): Promise<Facts
   const isBusiness = goal.goal_type === "business";
   if (isBusiness && !goal.business_profile_id) throw new Error("This business goal has no business profile");
 
+  const businessId = goal.business_profile_id;
   const [reports, fields, personalAnswers, businessResult, businessAnswers, goalAnswers] = await Promise.all([
-    supabase.from("credit_reports").select("id, extraction_status, report_date, created_at").eq("client_id", clientId),
-    supabase.from("report_fields").select("report_id, bureau, field_key, score_model, value, needs_review").eq("client_id", clientId),
+    supabase.from("credit_reports").select("id, extraction_status, report_date, created_at, report_type").eq("client_id", clientId),
+    supabase.from("report_fields").select("report_id, bureau, field_key, score_model, value, needs_review, confidence, status").eq("client_id", clientId),
     supabase.from("questionnaire_answers").select("question_key, value_numeric, value_text, status, verified").eq("client_id", clientId),
-    isBusiness ? supabase.from("business_profiles").select("*").eq("client_id", clientId).eq("id", goal.business_profile_id!).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    isBusiness ? supabase.from("business_questionnaire_answers").select("question_key, value_numeric, value_text, status, verified, financial_source").eq("client_id", clientId).eq("business_profile_id", goal.business_profile_id!) : Promise.resolve({ data: [], error: null }),
+    isBusiness && businessId ? supabase.from("business_profiles").select("*").eq("client_id", clientId).eq("id", businessId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    isBusiness && businessId ? supabase.from("business_questionnaire_answers").select("question_key, value_numeric, value_text, status, verified, financial_source").eq("client_id", clientId).eq("business_profile_id", businessId) : Promise.resolve({ data: [], error: null }),
     supabase.from("goal_questionnaire_answers").select("question_key, value_numeric, value_text, status, verified, financial_source").eq("client_id", clientId).eq("goal_id", goalId),
   ]);
   const business = businessResult.data as BusinessFinancialProfile | null;
@@ -53,18 +55,10 @@ export async function loadFacts(clientId: string, goalId: string): Promise<Facts
   if (businessAnswers.error) throw new Error("Business-specific answers could not be loaded");
   if (goalAnswers.error) throw new Error("Goal-specific answers could not be loaded");
   if (personalAnswers.error) throw new Error("Personal background answers could not be loaded");
+  if (reports.error || fields.error) throw new Error("Credit report evidence could not be loaded; matching was not run.");
 
   const reps = reports.data ?? [];
-  const order = new Map(reps.map((report) => [report.id, new Date(report.report_date ?? report.created_at).getTime()]));
-  const sorted = [...(fields.data ?? [])].sort((a, b) => (order.get(a.report_id) ?? 0) - (order.get(b.report_id) ?? 0));
-  const bureau: Facts["bureau"] = {};
-  const scoreMap = new Map<string, { bureau: Bureau; model: string; value: number | null }>();
-  for (const field of sorted) {
-    if (field.needs_review) continue;
-    const b = field.bureau as Bureau;
-    if (field.field_key === "score" && field.score_model) scoreMap.set(`${b}|${field.score_model}`, { bureau: b, model: field.score_model, value: field.value });
-    else { bureau[b] = bureau[b] ?? {}; bureau[b]![field.field_key] = field.value; }
-  }
+  const reportFacts = selectReportFacts(reps, fields.data ?? []);
 
   // Legacy client-global financial answers remain background data only. Rule inputs come from the exact goal.
   const personalRows = (personalAnswers.data ?? []).filter((answer) => !GOAL_SCOPED_PERSONAL_KEYS.has(answer.question_key));
@@ -89,7 +83,7 @@ export async function loadFacts(clientId: string, goalId: string): Promise<Facts
   const applicationAnswer = goalSpecific.text["application_mode"];
   const applicationMode: ApplicationMode = applicationAnswer === "individual" || applicationAnswer === "joint" ? applicationAnswer : "unknown";
 
-  const criticalWarnings: string[] = [];
+  const criticalWarnings: string[] = [...reportFacts.criticalWarnings];
   if (reps.length === 0) criticalWarnings.push("No credit report on file.");
   for (const report of reps) {
     if (report.extraction_status === "unreadable" || report.extraction_status === "clearer_pdf_requested") criticalWarnings.push("A report is unreadable — clearer PDF requested.");
@@ -102,8 +96,8 @@ export async function loadFacts(clientId: string, goalId: string): Promise<Facts
   if (applicationMode === "joint") criticalWarnings.push("Joint application selected; only rules explicitly documented for that exact joint path can support a potential match.");
 
   return {
-    scores: [...scoreMap.values()],
-    bureau,
+    scores: reportFacts.scores,
+    bureau: reportFacts.bureau,
     answers,
     answerTexts,
     answerMeta: answerMetaByScope,

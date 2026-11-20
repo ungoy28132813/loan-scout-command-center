@@ -19,10 +19,15 @@ function useList<T>(key: string, clientId: string, table: string, order = "creat
 function EvidenceLink({ docId }: { docId: string }) {
   const open = async () => {
     const w = window.open("", "_blank");
-    const { data: doc } = await supabase.from("documents").select("storage_path").eq("id", docId).maybeSingle();
-    const { data } = doc ? await supabase.storage.from("client-documents").createSignedUrl(doc.storage_path, 60) : { data: null };
+    if (w) w.opener = null;
+    const { data: doc } = await supabase.from("documents").select("storage_path, client_id").eq("id", docId).maybeSingle();
+    if (!doc) { w?.close(); return void toast.error("Document unavailable"); }
+    const { data } = await supabase.storage.from("client-documents").createSignedUrl(doc.storage_path, 60);
     if (!data?.signedUrl) { w?.close(); return void toast.error("Document unavailable"); }
-    if (w) w.location.href = data.signedUrl;
+    const { error } = await supabase.rpc("log_event", { _action: "view", _entity: "document", _entity_id: docId, _client_id: doc.client_id, _meta: {} });
+    if (error) { w?.close(); return void toast.error("Document access could not be recorded"); }
+    if (w) w.location.replace(data.signedUrl);
+    else toast.error("Allow pop-ups to view the supporting document");
   };
   return <Button size="sm" variant="link" className="h-auto p-0 text-xs" onClick={open}>View supporting document</Button>;
 }

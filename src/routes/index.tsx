@@ -7,6 +7,8 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Loan Scout Matching Tool — Loan Scout LLC" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "description", content: "Secure internal platform for Loan Scout LLC advisors and clients: private documents, human-reviewed lender matching and funding readiness." },
       { property: "og:title", content: "Loan Scout Matching Tool" },
       { property: "og:description", content: "Secure, human-reviewed funding recommendations from Loan Scout LLC." },

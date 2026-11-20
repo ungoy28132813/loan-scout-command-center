@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Loan Scout Matching Tool" }, { name: "description", content: "Your Loan Scout workspace." }, { property: "og:title", content: "Dashboard — Loan Scout" }, { property: "og:description", content: "Your Loan Scout workspace." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Dashboard — Loan Scout Matching Tool" }, { name: "description", content: "Your Loan Scout workspace." }, { property: "og:title", content: "Dashboard — Loan Scout" }, { property: "og:description", content: "Your Loan Scout workspace." }] }),
   component: Dashboard,
 });
 

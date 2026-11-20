@@ -281,6 +281,27 @@
       "when": 1795207198841,
       "tag": "0039_auto_confirm_report_status",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795209847823,
+      "tag": "0040_guard_publication_rereview_after_revocation",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795209964734,
+      "tag": "0041_auto_confirmation_without_owner_impersonation",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1795210213142,
+      "tag": "0042_separate_auto_receipt_from_trusted_credit_evidence",
+      "breakpoints": true
     }
   ]
 }
