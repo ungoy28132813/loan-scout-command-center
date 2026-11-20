@@ -54,7 +54,7 @@ use the editor.
 - Continue this existing application. Reconcile current code with the recorded queue; do not restart the scaffold or treat partial work as finished.
 - Keep the repository private, preserve the Lovable-managed block above, coordinate writers, and do not deploy production or activate lender policies without explicit owner approval.
 
-- Credit-report readings are auto-confirmed by database triggers (`auto_confirm_*`, `auto_accept_client_submission`) per owner decision 2026-11-20; unreadable reports and missing values stay unknown. Why: owner chose automatic confirmation of every reading.
+- Credit-report readings are automatically received/imported, not trusted as verified until staff acceptance; unreadable reports and missing values stay unknown. Why: client-supplied readings cannot establish independent verification.
 - Matching selects the latest dated snapshot per bureau through the pure report-facts module; missing current fields never inherit historical values and conflicting model aliases stay unknown. Why: merging different report dates can produce falsely favorable eligibility evidence.
 - Staff task-evidence views must record document access before navigation and detach the new window's opener. Why: private evidence access must retain the same audit and window isolation as library views.
 - Publication assignment checks run on publication transitions, not metadata-only re-review updates; snapshot client ownership and released content remain immutable. Why: fresh uploads must still flag old recommendations after employee access is revoked.

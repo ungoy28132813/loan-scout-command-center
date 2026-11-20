@@ -44,7 +44,7 @@
 - [ ] Section 08 partial — AI interpretation/source ZIP blocked; observations/history foundation verified
 - [ ] Section 09 partial — additional uncertainty/security/accessibility/legal readiness work remains
 - [x] Approve clear lender source items (4 Prosper rules); others kept as notes
-- [x] Auto-confirm every credit report reading (staff and client uploads)
+- [x] Automatic receipt/import with staff-only trusted verification (security correction to unsafe auto-confirmation)
 
 ## Final deep-review correction (2026-11-20)
 - Completed deep review reported one staff-assignment probe warning and three automatic-verification errors. Migration 0042 restricts caller-selected relationship checks and disables automatic promotion to verified evidence. Automatic receipt/import is retained, but staff acceptance is now required for trusted matching; this safety correction supersedes earlier automatic-confirmation statements above. Owner-requested automation cannot establish independent accuracy of client-supplied readings.
