@@ -10,7 +10,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 04 | Underwriting Rules / Questionnaires | **completed** — goal-scoped provenance and deterministic rule coverage verified |
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
-| 07 | Client Publishing / Documents / Exports | **partial** — task-evidence UI, staff verify/view, client PDF button wired; PDF unit tests pass; browser download + DB isolation tests pending |
+| 07 | Client Publishing / Documents / Exports | **completed** — evidence, verification, published-only portal, manual publication and PDF export verified |
 | 08 | Intelligence / Bureau Pulls / Analytics | **not built** — awaiting writer-coordination confirmation |
 | 09 | Final QA / Readiness | **partial** — audit docs written; see FEATURE_ACCEPTANCE.md / SECURITY_READINESS.md |
 
@@ -222,3 +222,14 @@ Undisclosed lender calculations and unsupported joint variations intentionally r
 - Client plan tab: Prepare/Download PDF via permission-checked `prepare_strategy_export`.
 - Tests: 118/118 unit (new `strategy-pdf.test.ts`: valid PDF, internal note excluded, safe filename); TypeScript clean.
 - NOT yet verified: browser download with synthetic data, rollback cross-client permission checks, production build. Stopped: workspace credits ran out.
+
+## Section 07 — acceptance (2026-11-20)
+
+**State: completed for the safely available scope.** Unpublished; not production certified.
+
+- 118/118 unit tests (incl. `strategy-pdf.test.ts`), TypeScript clean, production build OK.
+- 14/14 rollback-only database checks in `tests/sql/client_portal_regression.sql`: client sees only own published tasks and snapshot; no internal notes or other-client documents; other-client evidence, unpublished task and other-client task rejected; own evidence accepted and left awaiting verification; client cannot self-verify; scheduled publication rejected; published snapshot immutable; own export excludes notes; draft and other-client exports rejected.
+- Real Chromium download as a temporary synthetic client: `loan-scout-strategy-synthetic-pdf-client-v1.pdf` (3,822 bytes), valid PDF with citation, verified date and disclaimer; planted internal note absent; no page errors.
+- Cleanup readback: 0 clients, snapshots, notes, assignments, client consents, files; roles = owner only; 24 lenders, 49 products, 13 pending candidates, 0 active rules.
+- Q73 unchanged: new reports flag re-review; nothing republishes. Scheduled release stays disabled (manual only).
+- Not covered: Safari/iOS download, staff-side evidence viewing in a browser (signed-URL code path only typechecked).

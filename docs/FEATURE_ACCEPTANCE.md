@@ -27,10 +27,10 @@ Live readback: 0 clients, 0 demo clients, 0 documents, 0 stored files, 24 lender
 | Applications | Five statuses, staff-only edits, silent changes, optional outcomes (Q70 undecided) | TESTED | Section 06 |
 | Applications | Guided application guidance for all lenders | PARTIAL | Only Wells Fargo/Prosper have reviewed guidance |
 | Portal | Published-only client view, announcements, read-only statuses | BUILT | Pre-existing; Section 07 re-verification incomplete |
-| Portal | Task evidence attachments + staff verification | PARTIAL | Backend done; client UI not finished/tested |
-| Publishing | Manual-only release; scheduled release disabled | PARTIAL | Backend blocks scheduling; UI/test incomplete |
+| Portal | Task evidence attachments + staff verification | TESTED | Section 07 DB checks; staff view not browser-tested |
+| Publishing | Manual-only release; scheduled release disabled | TESTED | Section 07 DB checks |
 | Publishing | Q73 re-review flag on new report | BUILT | `flag_rereview` trigger; Q73 undecided |
-| Export | Downloadable strategy PDF without internal notes | PARTIAL | Generator + permission-checked export function exist; no browser download test |
+| Export | Downloadable strategy PDF without internal notes | TESTED | Chromium download + unit/DB checks |
 | Intelligence | Bureau-pull observations, outcome aggregates with sample thresholds | NOT BUILT | Section 08 not implemented |
 | Ops | Rate limits on research/auth endpoints | PARTIAL | Managed auth limits only; no app-level limits verified |
 | QA | Mobile/contrast/dark-mode audit | NOT TESTED | No browser audit this pass |
