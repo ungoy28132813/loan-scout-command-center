@@ -302,6 +302,27 @@
       "when": 1795210213142,
       "tag": "0042_separate_auto_receipt_from_trusted_credit_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1795212766433,
+      "tag": "0043_local_ollama_advisory_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795212831468,
+      "tag": "0044_local_ai_job_limits_and_outcome_context",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795213096177,
+      "tag": "0045_local_ai_explicit_least_privilege",
+      "breakpoints": true
     }
   ]
 }

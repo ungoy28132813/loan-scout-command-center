@@ -11,10 +11,17 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
 | 07 | Client Publishing / Documents / Exports | **completed** — evidence, verification, published-only portal, manual publication and PDF export verified |
-| 08 | Intelligence / Bureau Pulls / Analytics | **partial** — bureau observations, rule coverage and thresholded owner insights verified; AI source analysis blocked |
+| 08 | Intelligence / Bureau Pulls / Analytics | **partial** — observations/history/owner insights verified; local AI pilot built and app flow tested, owner Windows/model setup outstanding |
 | 09 | Final QA / Readiness | **partial** — accuracy fixes and synthetic owner/client/employee browser QA verified; deeper security, abuse controls and remaining acceptance gaps documented |
 
 ## Section 01 — Security, identity and consent
+
+### Local AI continuation — 2026-11-20
+- Built owner-only public-source Ollama review using a revocable outbound Windows worker, private one-download setup, bounded queue, checked evidence quotes and note-only review. No reports or client identifiers go to the worker; no policy or matching changes.
+- Context refreshes from at least five non-demo verified outcomes containing both approvals and denials, counts only. No model training, automatic underwriting changes, probability predictions or scheduled lender monitoring.
+- Authenticated app/browser flow verified through simulated worker results, 145 application tests, 9 privilege checks and 12 owner-bootstrap checks. Windows installer/body syntax checked. Synthetic test connections/jobs removed; 24 lenders, 49 products, 13 candidates and 4 existing approved rules preserved.
+- **Still blocked on owner PC action:** run the paired download once; actual model accuracy, Windows encryption/ACL behavior and external HTTPS preview connectivity cannot be executed from this sandbox. See LOCAL_AI.md for exact commands and scope.
+- Sections 08/09 remain partial. No public deployment or security-finding resolution/ignore was performed.
 
 **State: completed for all safely available scope.** The app remains unpublished and is not production certified.
 

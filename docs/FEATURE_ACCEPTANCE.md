@@ -21,7 +21,7 @@ Cleanup readback: 0 clients, documents, reports, submissions, readiness tasks, a
 | Business | Multiple business profiles, goal-scoped facts | TESTED | Module 2 |
 | Catalog | 24 lenders, 49 sourced products; original 35 not reconstructed | TESTED | Section 03; no invented products |
 | Research | On-demand official retrieval + manual submission, owner review | TESTED | Section 03 |
-| Research | AI-assisted source interpretation | NOT BUILT | Section 08 not implemented |
+| Research | AI-assisted source interpretation | PARTIAL | Owner local Ollama pilot built; authenticated app flow tested using synthetic worker responses, actual owner Windows/model execution outstanding; see LOCAL_AI.md |
 | Rules | Deterministic engine, unknown never disqualifies, 0–100 suitability only | TESTED | Section 04 |
 | Rules | Owner-only activation | TESTED | 4 clear Prosper Note Channel rules explicitly approved by owner; 9 items remain non-enforcing notes; QA changed none |
 | Planner | Goal-scoped scenarios, approval gate, draft-only handoff | TESTED | Section 05 |
@@ -32,7 +32,7 @@ Cleanup readback: 0 clients, documents, reports, submissions, readiness tasks, a
 | Publishing | Manual-only release; scheduled release disabled | TESTED | Section 07 DB checks |
 | Publishing | Q73 re-review flag on new report | TESTED | New upload after staff revocation now succeeds and flags published snapshot; status/content unchanged; unassigned new publication, ownership mutation and content rewrite denied; Q73 remains undecided |
 | Export | Downloadable strategy PDF without internal notes | TESTED | Real Chromium and mobile WebKit downloads; pypdf validated citations/date/disclaimer and absence of planted confidential/draft/cross-client content; no physical iOS test |
-| Intelligence | Bureau-pull observations, outcome aggregates with sample thresholds | TESTED | Section 08 DB + unit checks and prior owner browser history/coverage check; AI interpretation remains unbuilt |
+| Intelligence | Bureau-pull observations, outcome aggregates with sample thresholds | TESTED | Section 08 DB + unit checks and prior owner browser history/coverage check; local AI adds count-only context, not model training or policy learning |
 | Ops | Rate limits on research/auth endpoints | PARTIAL | Managed auth limits only; no app-level limits verified |
 | QA | Mobile/contrast/dark-mode audit | PARTIAL | All six client tabs fit 390px; light/dark screenshots inspected; prior owner desktop/mobile checks. No exhaustive automated contrast/keyboard/screen-reader audit |
 

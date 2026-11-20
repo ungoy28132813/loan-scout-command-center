@@ -19,7 +19,7 @@ No go-live approval has been given. Do not process real client data or publish u
 1. **Passkeys BLOCKED** — backend returns `passkey_disabled`.
 2. **Remote session revocation BLOCKED** — deactivated employees' tokens remain valid until expiry, though data access is blocked by RLS.
 3. Section 07 verified 2026-11-20; Chromium and mobile WebKit PDF downloads tested, physical Safari/iOS device and large-report memory stress not tested.
-4. Section 08 partial — observations and k>=5 owner aggregates verified; AI source analysis not built.
+4. Section 08 partial — local AI public-source pilot built and app flow verified with simulated worker replies; actual owner Windows/model execution remains outstanding. No raw reports enter the pilot; results remain unverified advisory notes. See LOCAL_AI.md.
 5. **No app-level rate limiting** verified on research retrieval or exports.
 6. All six client tabs checked at 390px, light/dark screenshots inspected, employee and client flows exercised; exhaustive color-contrast/keyboard/screen-reader audit remains incomplete.
 7. Deep security review was requested this pass but no completed result was available when checked; retrieved scan results were older (2026-11-17), not evidence of a clean current deep review. No penetration test or production certification.

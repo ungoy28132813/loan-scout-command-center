@@ -1427,6 +1427,126 @@ export type Database = {
         }
         Relationships: []
       }
+      local_ai_jobs: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          expires_at: string
+          finished_at: string | null
+          id: string
+          input: Json
+          lease_id: string | null
+          lease_until: string | null
+          model: string
+          owner_id: string
+          product_id: string
+          result: Json | null
+          review_status: string
+          reviewed_at: string | null
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          expires_at?: string
+          finished_at?: string | null
+          id?: string
+          input: Json
+          lease_id?: string | null
+          lease_until?: string | null
+          model: string
+          owner_id: string
+          product_id: string
+          result?: Json | null
+          review_status?: string
+          reviewed_at?: string | null
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          expires_at?: string
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          lease_id?: string | null
+          lease_until?: string | null
+          model?: string
+          owner_id?: string
+          product_id?: string
+          result?: Json | null
+          review_status?: string
+          reviewed_at?: string | null
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "local_ai_jobs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "local_ai_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "local_ai_jobs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "local_ai_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      local_ai_workers: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          last_seen_at: string | null
+          model: string
+          owner_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label: string
+          last_seen_at?: string | null
+          model: string
+          owner_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          model?: string
+          owner_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "local_ai_workers_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_results: {
         Row: {
           client_id: string
@@ -2285,6 +2405,10 @@ export type Database = {
         Args: { _employee_id: string; _transfer_to?: string }
         Returns: undefined
       }
+      enqueue_local_ai_job: {
+        Args: { _input: Json; _owner_id: string; _product_id: string }
+        Returns: Json
+      }
       grant_roles_on_confirm: {
         Args: { _email: string; _uid: string }
         Returns: undefined
@@ -2326,6 +2450,18 @@ export type Database = {
           verified_pull_observations: number
         }[]
       }
+      local_ai_outcome_context: { Args: { _product_id: string }; Returns: Json }
+      local_ai_worker_exchange: {
+        Args: {
+          _action: string
+          _error_code?: string
+          _job_id?: string
+          _lease_id?: string
+          _result?: Json
+          _token: string
+        }
+        Returns: Json
+      }
       log_event: {
         Args: {
           _action: string
@@ -2336,7 +2472,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      pair_local_ai_worker: {
+        Args: { _label: string; _model: string }
+        Returns: Json
+      }
       prepare_strategy_export: { Args: { _snapshot_id: string }; Returns: Json }
+      review_local_ai_job: {
+        Args: { _decision: string; _id: string }
+        Returns: undefined
+      }
       review_product_research: {
         Args: { _decision: string; _id: string }
         Returns: undefined
@@ -2345,6 +2489,7 @@ export type Database = {
         Args: { _decision: string; _id: string }
         Returns: string
       }
+      revoke_local_ai_worker: { Args: { _id: string }; Returns: undefined }
       submit_client_extraction: {
         Args: { _idempotency_key: string; _payload: Json; _report_id: string }
         Returns: string
@@ -2358,6 +2503,7 @@ export type Database = {
         Args: { _payload: Json }
         Returns: undefined
       }
+      verify_local_ai_token: { Args: { _token: string }; Returns: boolean }
     }
     Enums: {
       app_role: "owner" | "employee" | "client"

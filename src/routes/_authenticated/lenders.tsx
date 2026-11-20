@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -70,7 +70,7 @@ function Lenders() {
   return (
     <div>
       <PageHeader title="Lender Intelligence" kicker={`${q.data.lenders.length} lender identities · ${q.data.products.length} products`}>
-        <Button variant="outline" disabled title="No AI research connector is configured. Official-source retrieval and manual review are available on each product."><Sparkles className="mr-2 h-4 w-4" />AI source analysis pending <span className="ml-2"><FutureBadge phase="Phase 3" /></span></Button>
+        {me.primary === "owner" ? <Button variant="outline" asChild><Link to="/local-ai"><Sparkles className="mr-2 h-4 w-4" />Local AI review</Link></Button> : <span className="text-xs text-muted-foreground">Owner local AI pilot <FutureBadge phase="Phase 3" /></span>}
       </PageHeader>
       <Alert className="mb-4"><AlertDescription>All {q.data.lenders.length} lender identities are listed. {q.data.products.length} products carry <b>published product information</b> from official pages; their underwriting criteria are <b>awaiting owner source review</b> and do not affect matching until approved. Marketed amounts and APRs are product-level ranges, not offers or guaranteed amounts. Nothing here is an approval probability.</AlertDescription></Alert>
       <details className="mb-4 rounded border bg-card p-3"><summary className="label-caps cursor-pointer">Rule coverage, bureau observations and insights</summary><div className="mt-3"><IntelligencePanel lenders={q.data.lenders} products={q.data.products} rules={q.data.rules} candidates={q.data.candidates} isOwner={isOwner} meId={me.id} /></div></details>

@@ -16,12 +16,14 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLendersRouteImport } from './routes/_authenticated/lenders'
+import { Route as AuthenticatedLocalAiRouteImport } from './routes/_authenticated/local-ai'
 import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated/roadmap'
 import { Route as AuthenticatedSecurityRouteImport } from './routes/_authenticated/security'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
 import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_authenticated/clients.$clientId'
 import { Route as AuthenticatedPrintClientIdRouteImport } from './routes/_authenticated/print.$clientId'
+import { Route as ApiPublicLocalAiRouteImport } from './routes/api/public/local-ai'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +59,11 @@ const AuthenticatedLendersRoute = AuthenticatedLendersRouteImport.update({
   path: '/lenders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLocalAiRoute = AuthenticatedLocalAiRouteImport.update({
+  id: '/local-ai',
+  path: '/local-ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRoadmapRoute = AuthenticatedRoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -90,6 +97,11 @@ const AuthenticatedPrintClientIdRoute =
     path: '/print/$clientId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicLocalAiRoute = ApiPublicLocalAiRouteImport.update({
+  id: '/api/public/local-ai',
+  path: '/api/public/local-ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,11 +110,13 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/lenders': typeof AuthenticatedLendersRoute
+  '/local-ai': typeof AuthenticatedLocalAiRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/security': typeof AuthenticatedSecurityRoute
   '/team': typeof AuthenticatedTeamRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -112,11 +126,13 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/lenders': typeof AuthenticatedLendersRoute
+  '/local-ai': typeof AuthenticatedLocalAiRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/security': typeof AuthenticatedSecurityRoute
   '/team': typeof AuthenticatedTeamRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesById {
@@ -128,11 +144,13 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/lenders': typeof AuthenticatedLendersRoute
+  '/_authenticated/local-ai': typeof AuthenticatedLocalAiRoute
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/security': typeof AuthenticatedSecurityRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRouteTypes {
@@ -144,11 +162,13 @@ export interface FileRouteTypes {
     | '/account'
     | '/dashboard'
     | '/lenders'
+    | '/local-ai'
     | '/roadmap'
     | '/security'
     | '/team'
     | '/clients/$clientId'
     | '/print/$clientId'
+    | '/api/public/local-ai'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -158,11 +178,13 @@ export interface FileRouteTypes {
     | '/account'
     | '/dashboard'
     | '/lenders'
+    | '/local-ai'
     | '/roadmap'
     | '/security'
     | '/team'
     | '/clients/$clientId'
     | '/print/$clientId'
+    | '/api/public/local-ai'
     | '/clients'
   id:
     | '__root__'
@@ -173,11 +195,13 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/dashboard'
     | '/_authenticated/lenders'
+    | '/_authenticated/local-ai'
     | '/_authenticated/roadmap'
     | '/_authenticated/security'
     | '/_authenticated/team'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/print/$clientId'
+    | '/api/public/local-ai'
     | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
 }
@@ -186,6 +210,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicLocalAiRoute: typeof ApiPublicLocalAiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLendersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/local-ai': {
+      id: '/_authenticated/local-ai'
+      path: '/local-ai'
+      fullPath: '/local-ai'
+      preLoaderRoute: typeof AuthenticatedLocalAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/roadmap': {
       id: '/_authenticated/roadmap'
       path: '/roadmap'
@@ -281,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrintClientIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/local-ai': {
+      id: '/api/public/local-ai'
+      path: '/api/public/local-ai'
+      fullPath: '/api/public/local-ai'
+      preLoaderRoute: typeof ApiPublicLocalAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,6 +327,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLendersRoute: typeof AuthenticatedLendersRoute
+  AuthenticatedLocalAiRoute: typeof AuthenticatedLocalAiRoute
   AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
   AuthenticatedSecurityRoute: typeof AuthenticatedSecurityRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
@@ -300,6 +340,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLendersRoute: AuthenticatedLendersRoute,
+  AuthenticatedLocalAiRoute: AuthenticatedLocalAiRoute,
   AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
   AuthenticatedSecurityRoute: AuthenticatedSecurityRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
@@ -316,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicLocalAiRoute: ApiPublicLocalAiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

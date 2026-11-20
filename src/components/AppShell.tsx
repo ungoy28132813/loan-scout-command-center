@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
-import { LayoutDashboard, Users, Landmark, ShieldCheck, UserCog, Map, LogOut, Moon, Sun, Menu, KeyRound } from "lucide-react";
+import { LayoutDashboard, Users, Landmark, ShieldCheck, UserCog, Map, LogOut, Moon, Sun, Menu, KeyRound, Cpu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMe } from "@/lib/use-me";
 import { Logo } from "@/components/brand/Logo";
@@ -36,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/dashboard", label: me?.primary === "client" ? "My Funding" : "Command Center", icon: LayoutDashboard, show: true },
     { to: "/clients", label: "Clients", icon: Users, show: staff },
     { to: "/lenders", label: "Lenders", icon: Landmark, show: staff },
+    { to: "/local-ai", label: "Local AI", icon: Cpu, show: me?.primary === "owner" },
     { to: "/team", label: "Team & Access", icon: UserCog, show: me?.primary === "owner" },
     { to: "/security", label: "Security Center", icon: ShieldCheck, show: me?.primary === "owner" },
     { to: "/account", label: "My account", icon: KeyRound, show: true },

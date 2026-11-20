@@ -1,5 +1,11 @@
 # Loan Scout build roadmap
 
+## Local Ollama integration (2026-11-20)
+- [x] Build owner-only public-source AI jobs and privacy-gated verified-outcome context; no report text or automatic policy changes
+- [x] Build revocable outbound Windows worker connection, one-download setup, limits, offline handling and review controls
+- [x] Run synthetic unit/database/browser checks, document Windows/hardware blockers and commit; do not publish
+- [ ] Owner runs paired download on Windows; actual Ollama inference, answer accuracy and external preview connectivity await the owner computer
+
 ## Current accuracy and role QA (2026-11-20)
 - [x] Test temporary client and employee browser workflows, including private task evidence and staff verification
 - [x] Review auto-confirmed report facts for accuracy and fix reproducible defects with regression tests
