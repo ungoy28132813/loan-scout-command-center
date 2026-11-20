@@ -15,7 +15,7 @@ No go-live approval has been given. Do not process real client data or publish u
 1. **Passkeys BLOCKED** — backend returns `passkey_disabled`.
 2. **Remote session revocation BLOCKED** — deactivated employees' tokens remain valid until expiry, though data access is blocked by RLS.
 3. Section 07 verified 2026-11-20; Safari/iOS download not tested.
-4. **Section 08 not built** — no bureau-pull observations or outcome aggregates; no privacy thresholds implemented yet.
+4. Section 08 partial — observations and k>=5 owner aggregates verified; AI source analysis not built.
 5. **No app-level rate limiting** verified on research retrieval or exports.
 6. **No end-to-end browser QA this pass** for mobile, contrast, or dark mode.
 7. **No penetration test or deep code review** performed.

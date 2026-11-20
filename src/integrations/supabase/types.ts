@@ -279,6 +279,88 @@ export type Database = {
         }
         Relationships: []
       }
+      bureau_pull_observations: {
+        Row: {
+          application_id: string | null
+          bureaus: string[]
+          client_id: string | null
+          confidence: string
+          created_at: string
+          created_by: string
+          id: string
+          location_state: string | null
+          note: string | null
+          observed_on: string
+          product_id: string
+          provenance: string
+          pull_type: string
+          source_url: string | null
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          bureaus?: string[]
+          client_id?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          location_state?: string | null
+          note?: string | null
+          observed_on: string
+          product_id: string
+          provenance: string
+          pull_type?: string
+          source_url?: string | null
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          bureaus?: string[]
+          client_id?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          location_state?: string | null
+          note?: string | null
+          observed_on?: string
+          product_id?: string
+          provenance?: string
+          pull_type?: string
+          source_url?: string | null
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bureau_pull_observations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bureau_pull_observations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bureau_pull_observations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_profiles: {
         Row: {
           annual_revenue: number | null
@@ -2230,6 +2312,20 @@ export type Database = {
       }
       is_owner: { Args: { _uid: string }; Returns: boolean }
       is_staff: { Args: { _uid: string }; Returns: boolean }
+      lender_intelligence_summary: {
+        Args: { _min_sample?: number }
+        Returns: {
+          approved_pct: number
+          equifax_pct: number
+          experian_pct: number
+          hard_pct: number
+          product_id: string
+          suppressed: boolean
+          transunion_pct: number
+          verified_outcomes: number
+          verified_pull_observations: number
+        }[]
+      }
       log_event: {
         Args: {
           _action: string

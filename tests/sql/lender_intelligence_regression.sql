@@ -1,0 +1,6 @@
+-- Section 08 rollback-only checks (run via the SQL tool; final RAISE aborts the transaction so nothing persists).
+-- Verified 2026-11-20: 13/13 pass. See docs/BUILD_QUEUE.md Section 08 for the list of checks.
+-- Covers: documented provenance needs https source; no pre-verified inserts; bureau allowlist; verifier stamping;
+-- <5 verified hidden even when caller asks for 1; >=5 shows shares; approval rate stays null without verified outcomes;
+-- observations create no rules; 13 pending candidates untouched; employee blocked from owner insights;
+-- unassigned employee cannot read/add client-linked observations; creator cannot self-verify.

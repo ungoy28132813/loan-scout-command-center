@@ -11,7 +11,7 @@ This queue applies only to the existing Loan Scout Matching Tool project. Sectio
 | 05 | Funding Planning / Simulators | **completed** — internal scenario planning, approval, and draft-only handoff verified |
 | 06 | Guided Applications / Outcomes | **completed** — sourced guidance, staff-only evidence, and real-record metrics verified |
 | 07 | Client Publishing / Documents / Exports | **completed** — evidence, verification, published-only portal, manual publication and PDF export verified |
-| 08 | Intelligence / Bureau Pulls / Analytics | **not built** — awaiting writer-coordination confirmation |
+| 08 | Intelligence / Bureau Pulls / Analytics | **partial** — bureau observations, rule coverage and thresholded owner insights verified; AI source analysis blocked |
 | 09 | Final QA / Readiness | **partial** — audit docs written; see FEATURE_ACCEPTANCE.md / SECURITY_READINESS.md |
 
 ## Section 01 — Security, identity and consent
@@ -233,3 +233,22 @@ Undisclosed lender calculations and unsupported joint variations intentionally r
 - Cleanup readback: 0 clients, snapshots, notes, assignments, client consents, files; roles = owner only; 24 lenders, 49 products, 13 pending candidates, 0 active rules.
 - Q73 unchanged: new reports flag re-review; nothing republishes. Scheduled release stays disabled (manual only).
 - Not covered: Safari/iOS download, staff-side evidence viewing in a browser (signed-URL code path only typechecked).
+
+## Section 08 — acceptance (2026-11-20)
+
+**State: partial (safely available scope done).** Unpublished; not production certified.
+
+Built:
+- `bureau_pull_observations`: product, optional state, date, bureaus (TU/EX/EQ allowlist), hard/soft/unknown, provenance (client-reported / staff-observed / officially documented with required https link), confidence, verification status. Assigned-staff RLS; owner-only delete; audited. A second person (or the owner) must verify; creators cannot self-verify.
+- Owner-only `lender_intelligence_summary`: per-product shares from verified records only, hidden below 5 (the minimum cannot be lowered). Approval rate is computed only from verified Approved/Denied outcomes and stays hidden until 5 exist. No approval probability anywhere.
+- Rule coverage per lender: products, active rules, pending items, stale rules, "Missing approved rules" flag.
+- UI: Lenders page → "Rule coverage, bureau observations and insights".
+- Observations never write rules, eligibility or matching inputs. No background polling.
+
+Verified: 123/123 unit tests (new `lender-intelligence.test.ts`), TypeScript clean, production build OK, 13/13 rollback-only DB checks (`tests/sql/lender_intelligence_regression.sql`). Readback after: 0 observations, 0 clients, owner role only, 24 lenders, 49 products, 13 pending, 0 active rules.
+
+Not done / blocked:
+- **AI-assisted source investigation BLOCKED/not built**: no reviewed AI research design approved; official-page retrieval + manual submission from Section 03 remain the path.
+- Lender-product version history UI beyond existing rule versions/supersedes not expanded.
+- No browser check of the new panel as owner this pass (owner session requires your approval).
+- Missing source ZIP import remains blocked (files not received).

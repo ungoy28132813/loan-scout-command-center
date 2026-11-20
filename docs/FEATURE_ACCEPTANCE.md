@@ -31,6 +31,6 @@ Live readback: 0 clients, 0 demo clients, 0 documents, 0 stored files, 24 lender
 | Publishing | Manual-only release; scheduled release disabled | TESTED | Section 07 DB checks |
 | Publishing | Q73 re-review flag on new report | BUILT | `flag_rereview` trigger; Q73 undecided |
 | Export | Downloadable strategy PDF without internal notes | TESTED | Chromium download + unit/DB checks |
-| Intelligence | Bureau-pull observations, outcome aggregates with sample thresholds | NOT BUILT | Section 08 not implemented |
+| Intelligence | Bureau-pull observations, outcome aggregates with sample thresholds | TESTED | Section 08 DB + unit checks; panel not browser-tested |
 | Ops | Rate limits on research/auth endpoints | PARTIAL | Managed auth limits only; no app-level limits verified |
 | QA | Mobile/contrast/dark-mode audit | NOT TESTED | No browser audit this pass |

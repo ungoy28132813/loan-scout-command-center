@@ -18,6 +18,7 @@ import { StatusBadge, FutureBadge } from "@/components/StatusBadge";
 import { SourceReviewQueue, CandidateRow, type Candidate } from "@/components/lenders/SourceReview";
 import { ProductResearchPanel, ProductResearchQueue, type ProductResearch } from "@/components/lenders/ProductResearch";
 import type { Tables } from "@/integrations/supabase/types";
+import { IntelligencePanel } from "@/components/lenders/IntelligencePanel";
 
 type Product = Tables<"lender_products">;
 
@@ -72,6 +73,7 @@ function Lenders() {
         <Button variant="outline" disabled title="No AI research connector is configured. Official-source retrieval and manual review are available on each product."><Sparkles className="mr-2 h-4 w-4" />AI source analysis pending <span className="ml-2"><FutureBadge phase="Phase 3" /></span></Button>
       </PageHeader>
       <Alert className="mb-4"><AlertDescription>All {q.data.lenders.length} lender identities are listed. {q.data.products.length} products carry <b>published product information</b> from official pages; their underwriting criteria are <b>awaiting owner source review</b> and do not affect matching until approved. Marketed amounts and APRs are product-level ranges, not offers or guaranteed amounts. Nothing here is an approval probability.</AlertDescription></Alert>
+      <details className="mb-4 rounded border bg-card p-3"><summary className="label-caps cursor-pointer">Rule coverage, bureau observations and insights</summary><div className="mt-3"><IntelligencePanel lenders={q.data.lenders} products={q.data.products} rules={q.data.rules} candidates={q.data.candidates} isOwner={isOwner} meId={me.id} /></div></details>
       <SourceReviewQueue candidates={q.data.candidates} isOwner={isOwner} onDone={refresh} label={(pid) => { const p = q.data!.products.find((x) => x.id === pid); return `${q.data!.lenders.find((l) => l.id === p?.lender_id)?.name ?? ""} — ${p?.name ?? ""}`; }} />
       <ProductResearchQueue items={q.data.research} isOwner={isOwner} onDone={refresh} label={(pid) => { const p = q.data!.products.find((x) => x.id === pid); return `${q.data!.lenders.find((l) => l.id === p?.lender_id)?.name ?? ""} — ${p?.name ?? ""}`; }} />
       {q.data.products.length > 0 && <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{q.data.products.map((p) => <ProductCard key={p.id} p={p} lender={q.data!.lenders.find((l) => l.id === p.lender_id)?.name ?? ""} rules={q.data!.rules.filter((r) => r.product_id === p.id && r.approval_status === "active").length} pending={q.data!.candidates.filter((c) => c.product_id === p.id && c.review_status === "pending").length + q.data!.research.filter((r) => r.product_id === p.id && r.review_status === "pending").length} onOpen={() => setSelected(p.lender_id)} />)}</div>}
