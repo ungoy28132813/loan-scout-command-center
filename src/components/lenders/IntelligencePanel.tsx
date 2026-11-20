@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProductHistory } from "./ProductHistory";
 import { gatedPct, ruleCoverage, MIN_SAMPLE } from "@/lib/lender-intelligence";
 
 type L = { id: string; name: string }; type P = { id: string; lender_id: string; name: string };
@@ -35,6 +36,7 @@ export function IntelligencePanel({ lenders, products, rules, candidates, isOwne
   const shown = (summary.data ?? []).filter((s) => s.verified_pull_observations > 0 || s.verified_outcomes > 0);
 
   return <div className="space-y-4">
+    <ProductHistory lenders={lenders} products={products} />
     <Card><CardHeader><CardTitle className="label-caps">Rule coverage by lender</CardTitle><p className="text-sm text-muted-foreground">Lenders without active owner-approved rules are matched only as Needs Review. Pending source items stay inactive until the owner approves them.</p></CardHeader>
       <CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">Lender</th><th>Products</th><th>Active rules</th><th>Pending items</th><th>Stale</th><th>Coverage</th></tr></thead>
         <tbody>{cov.map((c) => <tr key={c.lenderId} className="border-t"><td className="py-1.5">{c.lender}</td><td>{c.products}</td><td>{c.activeRules}</td><td>{c.pendingCandidates}</td><td>{c.staleRules}</td>

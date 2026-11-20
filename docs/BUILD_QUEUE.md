@@ -249,6 +249,6 @@ Verified: 123/123 unit tests (new `lender-intelligence.test.ts`), TypeScript cle
 
 Not done / blocked:
 - **AI-assisted source investigation BLOCKED/not built**: no reviewed AI research design approved; official-page retrieval + manual submission from Section 03 remain the path.
-- Lender-product version history UI beyond existing rule versions/supersedes not expanded.
+- Added (2026-11-20): read-only per-product source and rule version history with fresh/stale badges (`ProductHistory.tsx`, `productHistory()`); 126/126 unit tests. Not browser-checked as owner.
 - No browser check of the new panel as owner this pass (owner session requires your approval).
 - Missing source ZIP import remains blocked (files not received).

@@ -33,3 +33,22 @@ export function gatedPct(value: number | null, n: number, min = MIN_SAMPLE): str
   if (n < Math.max(min, MIN_SAMPLE) || value == null) return `Hidden (fewer than ${Math.max(min, MIN_SAMPLE)} verified)`;
   return `${Math.round(value)}% of ${n} verified`;
 }
+
+export type HistoryRule = { id: string; product_id: string; rule_key: string; version: number; supersedes: string | null; approval_status: string; verified_on: string; stale_after_days: number; source_url: string; source_title: string; effective_date: string | null; created_at: string };
+export type HistoryCandidate = { id: string; product_id: string; criterion: string; review_status: string; verified_on: string; source_url: string; source_title: string; reviewed_at: string | null; created_at: string };
+export type HistoryEvent = { kind: "rule" | "source"; id: string; date: string; title: string; status: string; url: string; freshness: "fresh" | "stale" | "not_applicable"; detail: string };
+
+/** Read-only, chronological (newest first) source and rule version history for one product. Never changes any rule. */
+export function productHistory(productId: string, rules: HistoryRule[], candidates: HistoryCandidate[], today = new Date()): HistoryEvent[] {
+  const ev: HistoryEvent[] = [];
+  for (const r of rules.filter((x) => x.product_id === productId)) {
+    ev.push({ kind: "rule", id: r.id, date: r.created_at, title: `${r.rule_key} v${r.version}`, status: r.approval_status, url: r.source_url,
+      freshness: r.approval_status === "active" ? (isRuleStale(r.verified_on, r.stale_after_days, today) ? "stale" : "fresh") : "not_applicable",
+      detail: `${r.source_title} · verified ${r.verified_on}${r.effective_date ? ` · effective ${r.effective_date}` : ""}${r.supersedes ? " · supersedes earlier version" : ""}` });
+  }
+  for (const c of candidates.filter((x) => x.product_id === productId)) {
+    ev.push({ kind: "source", id: c.id, date: c.reviewed_at ?? c.created_at, title: c.criterion, status: c.review_status, url: c.source_url, freshness: "not_applicable",
+      detail: `${c.source_title} · source checked ${c.verified_on}` });
+  }
+  return ev.sort((a, b) => b.date.localeCompare(a.date));
+}
