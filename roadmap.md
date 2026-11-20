@@ -1,6 +1,7 @@
 # Loan Scout build roadmap
 
 ## Comprehensive AI benchmark (2026-11-20)
+- [x] Improve timeout, missing-model and offline-failure recovery commands; PowerShell regression/self-tests and three real-command failure simulations passed
 - [x] Add one-download local benchmark for installed models: exact-answer synthetic accuracy, source citations, injection resistance, latency/throughput, context, stability and bounded concurrency
 - [x] Execute benchmark harness self-tests and accessible app/browser tests, document limits and commit
 - [ ] Actual hardware/model benchmark awaits owner running the private-computer command; no remote machine access

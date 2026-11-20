@@ -5,10 +5,53 @@ $BundleBase64 = '__BENCHMARK_BASE64__'
 $DefaultModel = 'hf.co/unsloth/Qwen3.5-9B-GGUF:Q5_K_M'
 $Base = 'http://127.0.0.1:11434'
 $Rows = New-Object 'System.Collections.Generic.List[object]'
+$Troubleshooting = New-Object 'System.Collections.Generic.List[object]'
 $Started = Get-Date
 $OutputRoot = [Environment]::GetFolderPath('Desktop')
 if (-not $OutputRoot) { $OutputRoot = $HOME }
 $Out = Join-Path $OutputRoot ('LoanScout-Benchmark-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+
+function Get-FailureCode($Record, [int]$HttpStatus = 0) {
+    $Exception = $Record.Exception
+    if ($HttpStatus -eq 0 -and $Exception.Response) {
+        try { $HttpStatus = [int]$Exception.Response.StatusCode } catch { }
+    }
+    if ($HttpStatus -eq 404) { return 'model_unavailable' }
+    if ($HttpStatus -ge 400) { return 'local_http_failure' }
+    while ($Exception) {
+        if ($Exception -is [TimeoutException] -or $Exception -is [OperationCanceledException] -or
+            ($Exception -is [Net.WebException] -and $Exception.Status -eq [Net.WebExceptionStatus]::Timeout) -or
+            $Exception.Message -match '(?i)timeout|timed out|canceled due to.*Timeout') { return 'timeout' }
+        if ($Exception -is [Net.Sockets.SocketException] -or
+            ($Exception -is [Net.WebException] -and $Exception.Status -in @([Net.WebExceptionStatus]::ConnectFailure,[Net.WebExceptionStatus]::NameResolutionFailure)) -or
+            $Exception.Message -match '(?i)connection refused|actively refused|unable to connect') { return 'ollama_offline' }
+        if ($Exception.Message -eq 'No suitable installed generation models found.') { return 'model_unavailable' }
+        if ($Exception.Message -match '^MaxMinutes must|^Download the benchmark|^Invalid embedded benchmark') { return 'download_or_command' }
+        $Exception = $Exception.InnerException
+    }
+    return 'output_or_request_failure'
+}
+
+function Get-RecoverySteps($Code) {
+    $Rerun = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\Downloads\LoanScout-Benchmark.ps1" -SkipConcurrency -MaxMinutes 120'
+    $Check = 'Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/version" -TimeoutSec 10'
+    switch ($Code) {
+        'timeout' { return @('Stop the Loan Scout worker with Ctrl+C and close heavy apps. Keep Ollama running.', 'Check loaded models: ollama ps', ('Warm up the installed default model with a fictional prompt: ollama run "' + $DefaultModel + '" "Return only OK."'), ('Then retry without concurrent requests: ' + $Rerun), 'Each generation request is capped at 180 seconds (embedding: 60; concurrency: 120). MaxMinutes changes only the total run budget. If it still times out, use a smaller installed generation model; failed tests are not passes.') }
+        'model_unavailable' { return @('List installed models: ollama list', 'Embedding-only models cannot answer generation tests. Default selection excludes model files larger than 12 GB.', ('If a generation model is already installed but larger than 12 GB, run: ' + $Rerun + ' -IncludeLargeModels'), ('Optional, only with internet and enough disk space: ollama pull "' + $DefaultModel + '"'), ('After installation, retry: ' + $Rerun), 'The benchmark never downloads models automatically. Missing-model-404 is an intentional probe; a passing probe needs no repair.') }
+        'ollama_offline' { return @('Open the Ollama desktop app. Alternatively, run this in a SECOND PowerShell window and leave it open: ollama serve', 'If the port is already in use, do not start another server; check the existing Ollama app.', ('In the original window verify the local service: ' + $Check), 'Verify installed models: ollama list', ('Once the local check succeeds, retry: ' + $Rerun), 'There is no offline/cloud/paid AI fallback. Saved results remain available; unavailable analysis stays unavailable. Keep Ollama bound to localhost, not the internet.') }
+        'download_or_command' { return @('Download a fresh LoanScout-Benchmark.ps1 from Local AI into Downloads; do not run the unfilled repository template.', ('Run the downloaded file: ' + $Rerun), 'Use MaxMinutes between 1 and 180. Partial results from this attempt remain saved.') }
+        default { return @(('Check Ollama first: ' + $Check), 'Inspect local models and memory: ollama list; ollama ps', ('Try a fictional response locally: ollama run "' + $DefaultModel + '" "Return only OK."'), ('If it works, retry: ' + $Rerun), 'If Ollama works but JSON/citation checks fail, keep the failure report for review; do not count malformed or unsupported advice as accurate.', 'If the app worker is offline, restore internet access and restart it AFTER benchmarking: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\LoanScoutAI\worker.ps1"', 'If the connection was revoked, pair a fresh worker from Local AI. This localhost benchmark does not test hosted connectivity, pairing or offline fallback. No paid fallback is enabled.') }
+    }
+}
+
+function Show-Troubleshooting($Code) {
+    if (@($Troubleshooting | Where-Object { $_.code -eq $Code }).Count -gt 0) { return }
+    $Steps = @(Get-RecoverySteps $Code)
+    $Troubleshooting.Add([pscustomobject]@{code=$Code; steps=$Steps})
+    Write-Host ("`nTroubleshooting: " + $Code.Replace('_',' ')) -ForegroundColor Yellow
+    for ($i=0; $i -lt $Steps.Count; $i++) { Write-Host (($i+1).ToString() + '. ' + $Steps[$i]) }
+    Write-Host 'Recovery is manual; this script will not pull models, restart services or use hosted AI.'
+}
 
 function Grade-Exact($Value, $Expected) {
     $Failures = New-Object 'System.Collections.Generic.List[string]'
@@ -86,7 +129,7 @@ function Run-Stream($Model, $System, $Prompt, $Expected) {
         $Row.pass=$Grade.pass -and $null -ne $Final -and $Final.done_reason -ne 'length'
         $Row.errors=$Grade.errors
         if($Final){foreach($K in (Test-Metrics $Final).Keys){$Row[$K]=(Test-Metrics $Final)[$K]}}
-    } catch { $Row.error='Streaming HTTP, timeout or output failure' }
+    } catch { $Status=0; if($Response){$Status=[int]$Response.StatusCode}; $Row.errorCode=Get-FailureCode $_ $Status; $Row.error=$Row.errorCode; Show-Troubleshooting $Row.errorCode }
     finally {if($Reader){$Reader.Dispose()};if($Response){$Response.Dispose()};if($Client){$Client.Dispose()}}
     $Row.seconds=[Math]::Round($Watch.Elapsed.TotalSeconds,3);$Rows.Add([pscustomobject]$Row);Save-Results
 }
@@ -111,15 +154,16 @@ function Run-Embedding($Model) {
             $Row.dimensions=$Dim;$Row.identicalCosine=$Same;$Row.relevantCosine=$Relevant;$Row.unrelatedCosine=$Unrelated
             $Row.pass=$Valid -and $null -ne $Same -and $Same -gt .999 -and $null -ne $Relevant -and $Relevant -gt $Unrelated
         }
-    }catch{$Row.error='Local embedding HTTP or vector failure'}
+    }catch{$Row.errorCode=Get-FailureCode $_; $Row.error=$Row.errorCode; Show-Troubleshooting $Row.errorCode}
     $Row.seconds=[Math]::Round($Watch.Elapsed.TotalSeconds,3);$Rows.Add([pscustomobject]$Row);Save-Results
 }
 
 function Save-Results {
     New-Item -ItemType Directory -Path $Out -Force | Out-Null
     $Summary = @{ version = $Bundle.version; startedUtc = $Started.ToUniversalTime().ToString('o'); finishedUtc = (Get-Date).ToUniversalTime().ToString('o'); hardware = $Hardware; inventory = $Inventory; results = @($Rows.ToArray()); limitations = @('Synthetic checks are not production certification or legal review.','Exact-key checks use a benchmark prompt; advisory-shape checks use the app prompt.','Latency is wall time; token speed comes from Ollama counters.','Two-request concurrency is an isolated stress probe, not production worker behavior.','No private files, real credit reports, credentials or app jobs are read.','Power/temperature/electricity cost and real underwriting accuracy are not established.','Cold-ish timing unloads only the tested model; OS caches and other processes remain uncontrolled.','No third-party requests, downloads or model pulls are performed.') }
+    $Summary.troubleshooting = @($Troubleshooting.ToArray())
     $Summary | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath (Join-Path $Out 'benchmark_results.json') -Encoding UTF8
-    $Rows | Select-Object model,category,test,pass,seconds,tokensPerSecond,promptTokensPerSecond,generatedTokens,error | Export-Csv -LiteralPath (Join-Path $Out 'benchmark_metrics.csv') -NoTypeInformation -Encoding UTF8
+    $Rows | Select-Object model,category,test,pass,seconds,tokensPerSecond,promptTokensPerSecond,generatedTokens,error,errorCode | Export-Csv -LiteralPath (Join-Path $Out 'benchmark_metrics.csv') -NoTypeInformation -Encoding UTF8
     $Text = New-Object 'System.Collections.Generic.List[string]'
     $Text.Add('LOAN SCOUT SYNTHETIC LOCAL AI BENCHMARK'); $Text.Add('Not production certification. Failures require review; no model is automatically selected.'); $Text.Add('')
     foreach ($ModelGroup in ($Rows | Where-Object { $_.model -ne 'harness' } | Group-Object model)) {
@@ -132,7 +176,12 @@ function Save-Results {
         $Text.Add($ModelGroup.Name + ': exact-answer ' + $Passing + '/' + $Accuracy.Count + ' executed (20 planned for generation models); measured latency p50=' + $P50 + 's p95=' + $P95 + 's (mixed tests, not an SLA).')
         foreach ($Failed in @($Group | Where-Object { -not $_.pass -and $_.category -ne 'expected truncation' })) { $Text.Add('  REVIEW: ' + $Failed.test + ' / ' + ($Failed.errors -join '; ') + ' ' + $Failed.error) }
     }
-    $Text.Add(''); $Text.Add('Skipped models/tests and hardware measurements are in benchmark_results.json.'); $Text.Add('Upload benchmark_results.json and benchmark_metrics.csv; synthetic responses are included, never credentials.')
+    if ($Hardware.runError) { $Text.Add('RUN STOPPED: ' + $Hardware.runError) }
+    foreach ($Help in $Troubleshooting) {
+        $Text.Add(''); $Text.Add('TROUBLESHOOTING: ' + $Help.code)
+        for ($i=0; $i -lt $Help.steps.Count; $i++) { $Text.Add(($i+1).ToString() + '. ' + $Help.steps[$i]) }
+    }
+    $Text.Add(''); $Text.Add('No offline/cloud/paid fallback is configured. This benchmark tests localhost only, not the app worker connection.'); $Text.Add('Skipped models/tests and hardware measurements are in benchmark_results.json.'); $Text.Add('Upload benchmark_results.json and benchmark_metrics.csv; synthetic responses are included, never credentials.')
     $Text | Set-Content -LiteralPath (Join-Path $Out 'README.txt') -Encoding UTF8
 }
 
@@ -160,7 +209,7 @@ function Run-Case($Model, $Name, $Category, $System, $Prompt, $Expected, $Source
             if ($R.done_reason -eq 'length') { $Row.errors += 'Output token limit reached' }
             $Row.answer = $Answer
         }
-    } catch { $Row.error = 'Local HTTP, timeout or JSON failure'; $Row.errors = @('Inspect Ollama locally; no external fallback') }
+    } catch { $Row.errorCode = Get-FailureCode $_; $Row.error = $Row.errorCode; $Row.errors = @('See numbered recovery commands in README.txt'); Show-Troubleshooting $Row.errorCode }
     $Watch.Stop(); $Row.seconds = [Math]::Round($Watch.Elapsed.TotalSeconds,3)
     $Rows.Add([pscustomobject]$Row)
     Save-Results
@@ -171,7 +220,7 @@ function Run-Case($Model, $Name, $Category, $System, $Prompt, $Expected, $Source
 try {
     if ($MaxMinutes -lt 1 -or $MaxMinutes -gt 180) { throw 'MaxMinutes must be 1-180' }
     if ($BundleBase64 -eq '__BENCHMARK' + '_BASE64__') { throw 'Download the benchmark from Local AI so synthetic cases are embedded.' }
-    $Bundle = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($BundleBase64)) | ConvertFrom-Json
+    try { $Bundle = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($BundleBase64)) | ConvertFrom-Json } catch { throw 'Invalid embedded benchmark download' }
     $Hardware = @{ powershell = $PSVersionTable.PSVersion.ToString(); os = [Environment]::OSVersion.VersionString; logicalProcessors = [Environment]::ProcessorCount }
     $Inventory = @()
     if ($SelfTest) {
@@ -186,6 +235,10 @@ try {
         if ((Grade-Advice $Good 'Amount 3000.').pass) { throw 'Fabricated quote accepted' }
         if((Cosine @(1.0,0.0) @(1.0,0.0)) -ne 1 -or (Cosine @(1.0,0.0) @(0.0,1.0)) -ne 0){throw 'Cosine calculation failed'}
         if((Test-Metrics ([pscustomobject]@{eval_count=80;eval_duration=2000000000;prompt_eval_count=100;prompt_eval_duration=1000000000;load_duration=0})).tokensPerSecond -ne 40){throw 'Token speed calculation failed'}
+        if ((Get-FailureCode ([pscustomobject]@{Exception=[TimeoutException]::new('synthetic')})) -ne 'timeout') { throw 'Timeout classification failed' }
+        if ((Get-FailureCode ([pscustomobject]@{Exception=[Net.WebException]::new('synthetic',[Net.WebExceptionStatus]::ConnectFailure)})) -ne 'ollama_offline') { throw 'Offline classification failed' }
+        if ((Get-FailureCode ([pscustomobject]@{Exception=[Exception]::new('synthetic')}) 404) -ne 'model_unavailable') { throw 'Missing model classification failed' }
+        if ((Get-FailureCode ([pscustomobject]@{Exception=[Exception]::new('synthetic')}) 500) -ne 'local_http_failure') { throw 'HTTP classification failed' }
         $Rows.Add([pscustomobject]@{model='harness';category='self-test';test='20 expected answers + rejection checks + citations';pass=$true;seconds=0})
         Save-Results
         Write-Host ('Harness self-test passed: ' + $Bundle.cases.Count + ' synthetic cases. No model contacted.') -ForegroundColor Green
@@ -259,6 +312,7 @@ try {
                 $Results=@($Jobs|Receive-Job)
                 $Pass=$Results.Count -eq 2
                 foreach($R in $Results){if(-not $R.ok -or -not $R.done -or $R.doneReason -eq 'length'){$Pass=$false}else{try{if(-not (Grade-Exact ($R.response|ConvertFrom-Json) $First.expected).pass){$Pass=$false}}catch{$Pass=$false}}}
+                if (-not $Pass) { if (@($Jobs | Where-Object State -ne 'Completed').Count -gt 0) { Show-Troubleshooting 'timeout' } else { Show-Troubleshooting 'output_or_request_failure' } }
                 $Rows.Add([pscustomobject]@{model=$Model;category='concurrency';test='two-local-requests';pass=$Pass;seconds=[Math]::Round($Stopwatch.Elapsed.TotalSeconds,3)})
             } finally { if($Jobs.Count){$Jobs|Stop-Job -ErrorAction SilentlyContinue;$Jobs|Remove-Job -Force -ErrorAction SilentlyContinue} }
         }
@@ -266,11 +320,13 @@ try {
     }
     foreach($M in @($Tags.models|Where-Object{$_.name -match '(?i)minilm|embed|nomic|bge|mxbai'})){Run-Embedding $M.name}
     $Hardware.timeBudgetExhausted=(Remaining-Time) -lt 10
+    if ($Hardware.timeBudgetExhausted) { Write-Host 'Total run budget reached; unexecuted tests are not passes. MaxMinutes changes the total budget, not each request timeout.' -ForegroundColor Yellow; Show-Troubleshooting 'timeout' }
     Save-Results
     Write-Host 'Finished available tests; inspect failures and skipped coverage before selecting a model.' -ForegroundColor Green
-} catch {
+    } catch {
     if(-not $Hardware){$Hardware=@{}}
-    $Hardware.runError='Benchmark unavailable or interrupted; check Ollama locally and the embedded download.'
+    $Hardware.runError=Get-FailureCode $_
+    Show-Troubleshooting $Hardware.runError
     if(-not $Bundle){$Bundle=@{version='unavailable'}}
     Save-Results
     Write-Host 'Benchmark stopped safely; available results were saved. No app data changed.' -ForegroundColor Yellow

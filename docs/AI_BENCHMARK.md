@@ -30,6 +30,50 @@ Restart the normal local worker after testing:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\LoanScoutAI\worker.ps1"
 ```
 
+## Troubleshooting and exact recovery commands
+
+The downloaded command now prints numbered recovery steps once per failure type and saves them in `README.txt` and `benchmark_results.json`; CSV rows include a sanitized `errorCode`. Partial results are preserved even when Ollama is offline or no suitable model is installed. Exception bodies and service responses are not copied into troubleshooting reports.
+
+### Timeout or total time budget reached
+Stop the normal worker with Ctrl+C and close heavy apps, leaving Ollama open. Check and warm up the installed default model with a fictional prompt:
+
+```powershell
+ollama ps
+ollama run "hf.co/unsloth/Qwen3.5-9B-GGUF:Q5_K_M" "Return only OK."
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\Downloads\LoanScout-Benchmark.ps1" -SkipConcurrency -MaxMinutes 120
+```
+
+Generation/stream requests remain capped at 180 seconds, embeddings at 60 seconds and concurrent requests at 120 seconds. `-MaxMinutes` extends only the total benchmark budget; it does not fix an individual request timeout. Try a smaller installed generation model if warm-up and reduced load do not help. Skipped, timed-out or malformed tests never count as passes.
+
+### Local model unavailable
+Run `ollama list`. Embedding models cannot answer generation tests; the default selection skips model files larger than 12 GB. To test a larger **already installed** generation model:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\Downloads\LoanScout-Benchmark.ps1" -IncludeLargeModels -SkipConcurrency -MaxMinutes 120
+```
+
+If the default model is absent, the following **optional manual download requires internet and disk space**; the benchmark never runs it for you:
+
+```powershell
+ollama pull "hf.co/unsloth/Qwen3.5-9B-GGUF:Q5_K_M"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\Downloads\LoanScout-Benchmark.ps1" -SkipConcurrency -MaxMinutes 120
+```
+
+The deliberate `missing-model-404` probe is expected to pass when Ollama rejects the fictional missing model; do not install that fictional model.
+
+### Ollama offline or fallback unavailable
+Open the Ollama desktop app, or run `ollama serve` in a **second PowerShell window** and leave it open. If the port is already in use, check the existing service instead of starting another. In the original window:
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/version" -TimeoutSec 10
+ollama list
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\Downloads\LoanScout-Benchmark.ps1" -SkipConcurrency -MaxMinutes 120
+```
+
+Only retry once the version check succeeds. Keep Ollama on localhost; do not expose its port publicly. **No offline, cloud or paid AI fallback exists**: results stay saved, but unavailable analysis stays unavailable. The local benchmark cannot verify the hosted app connection. If the app worker remains offline, restore internet access and restart it **after the benchmark** using the restart command above; a revoked connection needs fresh pairing from Local AI. Do not share connection files or credentials.
+
+If a download is unfilled/corrupt, download it again from Local AI into Downloads. If local responses work but JSON/citation checks fail, retain the failure report for review rather than assuming accuracy or enabling fallback.
+
 ## Model probes
 - **20 independently graded exact-answer fixtures:** exact bureau/model and channel, unknown vs zero, newest-report selection, conflicting aliases, business isolation, utilization/paydown arithmetic, missing limit, cash vs credit, no 48-hour filter, verified approvals AND denials, unverified OCR, absent-account non-deletion, injected page commands/private-file requests, manual approval/publishing, strict >0 and secondary-estimate non-disqualification.
 - **App advisory protocol:** the actual application system prompt, field limits and whitespace-normalized quote presence. Quote presence is not interpretation accuracy. The exact-answer prompt is intentionally separate and its score is not represented as app-advice accuracy.
@@ -42,6 +86,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\LoanS
 - **Inventory:** OS, CPU/RAM, graphics names/drivers, reported WMI graphics memory warning, loopback listener and Ollama runner/model inventory. No confirmed electrical usage, temperature, VRAM total, long-term hardware health or price measurement.
 
 ## Executed in the sandbox
+### Troubleshooting improvement verification — 2026-11-20
+- Benchmark Vitest suite: **22/22 passed**. Downloaded PowerShell harness self-test passed with all 20 synthetic fixtures.
+- Durable `tests/powershell/benchmark-troubleshooting.ps1`: **11 failure classifications**, nested timeout detection, duplicate suppression, sanitized saved recovery and empty preflight-result persistence passed in PowerShell 7.6.5.
+- Executed the embedded downloaded command against three isolated loopback scenarios: refused connection, empty installed-model list, and a service exceeding the 10-second preflight timeout. All displayed the correct numbered recovery commands and saved JSON/README with zero fabricated passing rows.
+- No app data, service configuration, model installation, cloud fallback or security findings changed. Physical Windows PowerShell 5.1 and actual owner model behavior remain unverified.
+
+To rerun the durable PowerShell regression from the repository root on Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tests\powershell\benchmark-troubleshooting.ps1"
+```
+
 - All 167 application tests pass across 19 suites, including 22 new benchmark-grader cases and prior parser, model matching, finance/math, source provenance, privacy and PDF content tests.
 - PowerShell actual embedded-download self-test passes; a controlled loopback Ollama mock exercises the complete script, including inference metrics, streaming, nine context positions, repetitions, truncation, concurrent jobs, embedding vectors and saved report generation: 40 probe rows, all pass for intentionally correct mock answers. **These are harness tests, not Qwen scores or hardware timings.**
 - Owner browser workspace/phone checks: no page errors, no page overflow, offline analysis disabled, unauthenticated worker endpoint 401. Additional downloaded-file/runtime checks and sandbox timings are recorded below after execution.
