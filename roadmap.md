@@ -33,3 +33,5 @@
 ## Build queue acceptance
 - [x] Sections 01–06 completed with documented acceptance and rollback/security checks
 - [ ] Sections 07–09: queued in docs/BUILD_QUEUE.md; do not start until submitted in order
+- [x] Approve clear lender source items (4 Prosper rules); others kept as notes
+- [x] Auto-confirm every credit report reading (staff and client uploads)

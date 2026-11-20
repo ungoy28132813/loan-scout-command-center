@@ -267,6 +267,20 @@
       "when": 1795206056787,
       "tag": "0037_bureau_pull_observations",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795207177486,
+      "tag": "0038_auto_confirm_report_readings",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795207198841,
+      "tag": "0039_auto_confirm_report_status",
+      "breakpoints": true
     }
   ]
 }

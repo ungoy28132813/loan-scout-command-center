@@ -53,3 +53,5 @@ use the editor.
 - Before working, read `docs/CODEX_HANDOFF.md`, `docs/BUILD_QUEUE.md`, and `roadmap.md`. The handoff preserves the approved Q1-90 decisions and the partial Section 07 checkpoint.
 - Continue this existing application. Reconcile current code with the recorded queue; do not restart the scaffold or treat partial work as finished.
 - Keep the repository private, preserve the Lovable-managed block above, coordinate writers, and do not deploy production or activate lender policies without explicit owner approval.
+
+- Credit-report readings are auto-confirmed by database triggers (`auto_confirm_*`, `auto_accept_client_submission`) per owner decision 2026-11-20; unreadable reports and missing values stay unknown. Why: owner chose automatic confirmation of every reading.
