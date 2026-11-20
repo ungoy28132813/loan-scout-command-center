@@ -1,5 +1,10 @@
 # Loan Scout build roadmap
 
+## In-app benchmark recovery (2026-11-20)
+- [x] Add privacy-filtered log submission, owner-only AI Gateway diagnosis and persistent recovery outcomes
+- [x] Add vetted recovery commands/downloads and reuse confirmed fixes without automatic financial-policy or code changes
+- [x] Test real signed-in upload/diagnosis/recovery confirmation, privacy and cost controls; 175 tests and 15 read-only database checks passed
+
 ## Comprehensive AI benchmark (2026-11-20)
 - [x] Improve timeout, missing-model and offline-failure recovery commands; PowerShell regression/self-tests and three real-command failure simulations passed
 - [x] Add one-download local benchmark for installed models: exact-answer synthetic accuracy, source citations, injection resistance, latency/throughput, context, stability and bounded concurrency

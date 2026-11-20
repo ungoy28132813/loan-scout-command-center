@@ -23,6 +23,7 @@ import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
 import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_authenticated/clients.$clientId'
 import { Route as AuthenticatedPrintClientIdRouteImport } from './routes/_authenticated/print.$clientId'
+import { Route as ApiPublicBenchmarkDiagnosisRouteImport } from './routes/api/public/benchmark-diagnosis'
 import { Route as ApiPublicLocalAiRouteImport } from './routes/api/public/local-ai'
 
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +98,12 @@ const AuthenticatedPrintClientIdRoute =
     path: '/print/$clientId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicBenchmarkDiagnosisRoute =
+  ApiPublicBenchmarkDiagnosisRouteImport.update({
+    id: '/api/public/benchmark-diagnosis',
+    path: '/api/public/benchmark-diagnosis',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLocalAiRoute = ApiPublicLocalAiRouteImport.update({
   id: '/api/public/local-ai',
   path: '/api/public/local-ai',
@@ -116,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/benchmark-diagnosis': typeof ApiPublicBenchmarkDiagnosisRoute
   '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
 }
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/benchmark-diagnosis': typeof ApiPublicBenchmarkDiagnosisRoute
   '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
 }
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/print/$clientId': typeof AuthenticatedPrintClientIdRoute
+  '/api/public/benchmark-diagnosis': typeof ApiPublicBenchmarkDiagnosisRoute
   '/api/public/local-ai': typeof ApiPublicLocalAiRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/clients/$clientId'
     | '/print/$clientId'
+    | '/api/public/benchmark-diagnosis'
     | '/api/public/local-ai'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/clients/$clientId'
     | '/print/$clientId'
+    | '/api/public/benchmark-diagnosis'
     | '/api/public/local-ai'
     | '/clients'
   id:
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/print/$clientId'
+    | '/api/public/benchmark-diagnosis'
     | '/api/public/local-ai'
     | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicBenchmarkDiagnosisRoute: typeof ApiPublicBenchmarkDiagnosisRoute
   ApiPublicLocalAiRoute: typeof ApiPublicLocalAiRoute
 }
 
@@ -313,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrintClientIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/benchmark-diagnosis': {
+      id: '/api/public/benchmark-diagnosis'
+      path: '/api/public/benchmark-diagnosis'
+      fullPath: '/api/public/benchmark-diagnosis'
+      preLoaderRoute: typeof ApiPublicBenchmarkDiagnosisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/local-ai': {
       id: '/api/public/local-ai'
       path: '/api/public/local-ai'
@@ -357,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicBenchmarkDiagnosisRoute: ApiPublicBenchmarkDiagnosisRoute,
   ApiPublicLocalAiRoute: ApiPublicLocalAiRoute,
 }
 export const routeTree = rootRouteImport

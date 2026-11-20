@@ -279,6 +279,78 @@ export type Database = {
         }
         Relationships: []
       }
+      benchmark_ai_controls: {
+        Row: {
+          id: string
+          message: string | null
+          pause_kind: string | null
+          paused: boolean
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          message?: string | null
+          pause_kind?: string | null
+          paused?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          message?: string | null
+          pause_kind?: string | null
+          paused?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      benchmark_diagnostics: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_hash: string
+          owner_id: string
+          recovery_id: string | null
+          recovery_outcome: string
+          result: Json | null
+          status: string
+          symptoms: Json
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_hash: string
+          owner_id: string
+          recovery_id?: string | null
+          recovery_outcome?: string
+          result?: Json | null
+          status?: string
+          symptoms: Json
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_hash?: string
+          owner_id?: string
+          recovery_id?: string | null
+          recovery_outcome?: string
+          result?: Json | null
+          status?: string
+          symptoms?: Json
+        }
+        Relationships: []
+      }
       bureau_pull_observations: {
         Row: {
           application_id: string | null
@@ -2360,6 +2432,10 @@ export type Database = {
           rule_key: string
         }[]
       }
+      begin_benchmark_diagnosis: {
+        Args: { _hash: string; _owner_id: string; _symptoms: Json }
+        Returns: Json
+      }
       bootstrap_role_decision: {
         Args: { _confirmed: boolean; _email: string }
         Returns: string
@@ -2382,6 +2458,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      confirm_benchmark_recovery: {
+        Args: { _id: string; _outcome: string; _recovery: string }
+        Returns: undefined
+      }
       correct_tradeline: {
         Args: {
           _balance: number
@@ -2477,6 +2557,7 @@ export type Database = {
         Returns: Json
       }
       prepare_strategy_export: { Args: { _snapshot_id: string }; Returns: Json }
+      resume_benchmark_diagnosis: { Args: never; Returns: undefined }
       review_local_ai_job: {
         Args: { _decision: string; _id: string }
         Returns: undefined
@@ -2490,6 +2571,7 @@ export type Database = {
         Returns: string
       }
       revoke_local_ai_worker: { Args: { _id: string }; Returns: undefined }
+      stop_benchmark_diagnosis: { Args: { _id: string }; Returns: undefined }
       submit_client_extraction: {
         Args: { _idempotency_key: string; _payload: Json; _report_id: string }
         Returns: string

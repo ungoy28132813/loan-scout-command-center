@@ -323,6 +323,20 @@
       "when": 1795213096177,
       "tag": "0045_local_ai_explicit_least_privilege",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795215042009,
+      "tag": "0046_benchmark_diagnostics_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795215503114,
+      "tag": "0047_benchmark_diagnostics_least_privilege",
+      "breakpoints": true
     }
   ]
 }

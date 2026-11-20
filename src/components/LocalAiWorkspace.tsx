@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { localAiState, pairLocalAi, requestLocalAi, reviewLocalAi, revokeLocalAi } from "@/lib/local-ai.functions";
 import { adviceSchema, inputSchema, LOCAL_AI_MODEL, workerIsOnline } from "@/lib/local-ai";
 import { buildBenchmarkDownload } from "@/lib/ai-benchmark";
+import { BenchmarkDiagnostics } from "./BenchmarkDiagnostics";
 
 export const localAiQuery = { queryKey: ["local-ai"], queryFn: () => localAiState(), refetchInterval: 15_000 };
 
@@ -88,6 +89,7 @@ export function LocalAiWorkspace() {
       <p className="text-sm text-muted-foreground">Fictional accuracy checks, model/bureau separation, source citations, prompt-injection resistance, speed, repeatability, long context and two-request stress. No real reports or hosted AI charges.</p>
       <details><summary className="cursor-pointer text-sm font-medium">Run benchmark &amp; share results</summary><div className="mt-3 space-y-3 text-sm"><p>Stop the local worker with Ctrl+C first. Save the download in Downloads, then run once in PowerShell:</p><pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\\Downloads\\LoanScout-Benchmark.ps1"'}</code></pre><p>Up to 60 minutes for installed models under 12 GB; stops safely and saves partial results. To include larger models with a 120-minute budget:</p><pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\\Downloads\\LoanScout-Benchmark.ps1" -IncludeLargeModels -MaxMinutes 120'}</code></pre><p>File Explorer opens automatically. Attach benchmark_results.json and benchmark_metrics.csv here; no passwords or real reports are included. These tests do not certify funding accuracy.</p></div></details>
     </section>
+    <BenchmarkDiagnostics />
     <section className="space-y-4 border-b pb-6">
       <h2 className="font-display text-2xl">Public-source review</h2>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
