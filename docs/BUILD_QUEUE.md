@@ -252,3 +252,9 @@ Not done / blocked:
 - Added (2026-11-20): read-only per-product source and rule version history with fresh/stale badges (`ProductHistory.tsx`, `productHistory()`); 126/126 unit tests. Not browser-checked as owner.
 - No browser check of the new panel as owner this pass (owner session requires your approval).
 - Missing source ZIP import remains blocked (files not received).
+
+## Section 08/09 browser QA (2026-11-20)
+- Signed in as the real owner (no data changed): Command Center, Clients, Lenders, Security Center, Team, Roadmap, Account loaded at 1280px desktop, 390px phone and dark mode with no page errors and no horizontal overflow (Lenders phone: 1px, not visible).
+- Lender source/rule version history verified in browser: Prosper Note Channel shows 4 active Fresh rules plus approved/kept-as-note source items with official links; generic Prosper product correctly shows none.
+- 126 unit tests pass.
+- Still not done: AI-assisted source research (no approved design), Safari/iOS check, client/employee signed-in browser pass, missing source ZIP (not received). Passkeys disabled by backend; forced token revocation unavailable. Not production-certified; unpublished.
