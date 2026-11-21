@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { deliverFile } from "@/lib/download";
 import { strategyFilename, type StrategyExportPayload } from "@/lib/strategy-pdf";
 
-export function StrategyPdfDownload({ snapshotId, version }: { snapshotId: string; version: number }) {
+type StrategyPdfDownloadProps = { snapshotId: string; version: number };
+
+export function StrategyPdfDownload(props: StrategyPdfDownloadProps) {
+  // Never carry a prepared PDF or an in-flight request into a different snapshot.
+  return <SnapshotPdfDownload key={JSON.stringify([props.snapshotId, props.version])} {...props} />;
+}
+
+function SnapshotPdfDownload({ snapshotId, version }: StrategyPdfDownloadProps) {
   const [busy, setBusy] = useState(false);
   const [prepared, setPrepared] = useState<{ blob: Blob; filename: string } | null>(null);
 
@@ -17,6 +24,9 @@ export function StrategyPdfDownload({ snapshotId, version }: { snapshotId: strin
       const { data, error } = await supabase.rpc("prepare_strategy_export", { _snapshot_id: snapshotId });
       if (error) throw error;
       const payload = data as unknown as StrategyExportPayload;
+      if (!payload || payload.snapshot_id !== snapshotId || payload.version !== version) {
+        throw new Error("The exported strategy does not match the selected version. Refresh and try again.");
+      }
       const { generateStrategyPdf } = await import("@/lib/strategy-pdf");
       const blob = await generateStrategyPdf(payload);
       setPrepared({ blob, filename: strategyFilename(payload.client_name, payload.version) });
