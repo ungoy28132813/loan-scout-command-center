@@ -1,5 +1,10 @@
 # Loan Scout build roadmap
 
+## Format-aware credit report accuracy (2026-11-21)
+- [ ] Read SmartCredit score grids and three-bureau summary cards using printed bureau order and bounded sections
+- [ ] Read exact inquiry windows and revolving-only utilization; retain Unknown for missing models/cells and conflicts
+- [ ] Verify synthetic parser/PDF workflows, preserve local-only reading and staff acceptance, document limits and commit
+
 ## In-app benchmark recovery (2026-11-20)
 - [x] Add privacy-filtered log submission, owner-only AI Gateway diagnosis and persistent recovery outcomes
 - [x] Add vetted recovery commands/downloads and reuse confirmed fixes without automatic financial-policy or code changes

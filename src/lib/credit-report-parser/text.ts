@@ -23,9 +23,9 @@ export function last4(token: string | null | undefined): string | null {
 
 /** Values in a table row: money, numbers, percents, or blank markers ("-", "--", "N/A"). */
 export function rowValues(rest: string): (number | null)[] {
-  const toks = rest.match(/\$?-?\d[\d,]*(?:\.\d+)?%?|--?|n\/a|not reported/gi) ?? [];
+  const toks = normalizeLine(rest).match(/\$?-?\d[\d,]*(?:\.\d+)?%?|-+|n\/a|not reported/gi) ?? [];
   return toks.map((t) => {
-    if (/^--?$|^n\/a$|^not reported$/i.test(t)) return null;
+    if (/^-+$|^n\/a$|^not reported$/i.test(t)) return null;
     const n = Number(t.replace(/[$,%]/g, ""));
     return Number.isFinite(n) ? n : null;
   });
@@ -34,10 +34,18 @@ export function rowValues(rest: string): (number | null)[] {
 export function parseDate(s: string | undefined | null): string | null {
   if (!s) return null;
   const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (!m) return null;
-  const [mo, d, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const written = s.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b/i);
+  if (!m && !written) return null;
+  const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const [mo, d, y] = m ? [Number(m[1]), Number(m[2]), Number(m[3])] : [months.indexOf(written?.[1]?.toLowerCase() ?? "") + 1, Number(written?.[2]), Number(written?.[3])];
   if (mo < 1 || mo > 12 || d < 1 || d > 31 || y < 1990 || y > 2100) return null;
   const iso = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   const date = new Date(`${iso}T00:00:00Z`);
   return date.getUTCFullYear() === y && date.getUTCMonth() + 1 === mo && date.getUTCDate() === d ? iso : null;
+}
+
+/** All printed dates in a labeled row, including invalid dates as Unknown. */
+export function datesIn(line: string): (string | null)[] {
+  const tokens = line.match(/\d{1,2}\/\d{1,2}\/\d{4}|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi) ?? [];
+  return tokens.map(parseDate);
 }

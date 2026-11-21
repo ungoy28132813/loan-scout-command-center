@@ -1,10 +1,11 @@
 import { detectBureaus, detectProvider, bureausIn, hasTextLayer, headerOrder } from "./detect";
 import { fieldsFromDatedInquiries } from "./inquiries";
+import { readFormatSummaries } from "./formats";
 import { modelIn } from "./models";
-import { last4, maskSensitive, normalizeLine, parseDate, rowValues } from "./text";
+import { datesIn, last4, maskSensitive, normalizeLine, parseDate, rowValues } from "./text";
 import type { Bureau, Confidence, ExtractedField, ExtractedScore, ExtractedTradeline, PageText, ParseResult } from "./types";
 
-export const PARSER_VERSION = "ls-parse-1.1.0";
+export const PARSER_VERSION = "ls-parse-1.2.0";
 
 /** Summary rows mapped only when the label states the exact window/meaning. Anything else stays Unknown. */
 const FIELD_ROWS: [RegExp, string][] = [
@@ -13,11 +14,12 @@ const FIELD_ROWS: [RegExp, string][] = [
   [/^(?:hard\s+)?inquiries\s*(?:\((?:last\s*)?6\s*mo(?:nths?)?\)|(?:in\s+)?(?:the\s+)?last\s+6\s*mo(?:nths?)?)/i, "inquiries_6mo"],
   [/^(?:hard\s+)?inquiries\s*(?:\((?:last\s*)?12\s*mo(?:nths?)?\)|(?:in\s+)?(?:the\s+)?last\s+12\s*mo(?:nths?)?)/i, "inquiries_12mo"],
   [/^(?:hard\s+)?inquiries\s*(?:\((?:last\s*)?24\s*mo(?:nths?)?\)|(?:in\s+)?(?:the\s+)?last\s+24\s*mo(?:nths?)?)/i, "inquiries_24mo"],
+  [/^(?:hard\s+)?inquiries\s*\((?:last\s*)?2\s*years?\)/i, "inquiries_24mo"],
   [/^open\s+accounts\b/i, "open_tradelines"],
   [/^(?:revolving\s+)?(?:credit\s+)?utilization\b/i, "utilization_pct"],
   [/^collections?\b(?!\s+agency)/i, "collections_count"],
   [/^(?:charge[- ]?offs?|charged[- ]?off\s+accounts?)\b/i, "chargeoffs_count"],
-  [/^(?:currently\s+)?delinquent\s+accounts\b/i, "delinquent_accounts_count"],
+  [/^(?:currently\s+)?delinquent(?:\s+accounts)?\b/i, "delinquent_accounts_count"],
   [/^(?:30[- ]day|30\s+days?)\s+(?:late\s+payments?|lates?|delinquenc(?:y|ies))/i, "late_30_count"],
   [/^(?:60[- ]day|60\s+days?)\s+(?:late\s+payments?|lates?|delinquenc(?:y|ies))/i, "late_60_count"],
   [/^(?:90[- ]day|90\s+days?)\s+(?:late\s+payments?|lates?|delinquenc(?:y|ies))/i, "late_90_count"],
@@ -75,12 +77,16 @@ export function parseReportText(rawPages: PageText[], opts: ParseOptions = {}): 
   const reportType: ParseResult["reportType"] = bureausDetected.length >= 2 ? "tri_merge" : single ?? "unknown";
   if (!bureausDetected.length) warnings.push("No credit bureau named in the report text — bureau-specific values were not extracted.");
 
-  let reportDate: string | null = null;
-  let scoreDate: string | null = null;
+  const reportDates = new Set<string | null>();
+  const scoreDates = new Set<string | null>();
   for (const line of pages.flatMap((p) => p.lines)) {
-    if (!reportDate && /report\s*date/i.test(line)) reportDate = parseDate(line);
-    if (!scoreDate && /score\s*date|date\s*of\s*score|scores?\s+as\s+of/i.test(line)) scoreDate = parseDate(line);
+    if (/^report\s*date\b/i.test(line)) datesIn(line).forEach((date) => reportDates.add(date));
+    if (/^(?:score\s*date|date\s*of\s*score|scores?\s+as\s+of)\b/i.test(line)) datesIn(line).forEach((date) => scoreDates.add(date));
   }
+  const reportDate = reportDates.size === 1 ? [...reportDates][0] ?? null : null;
+  const scoreDate = scoreDates.size === 1 ? [...scoreDates][0] ?? null : null;
+  if (reportDates.size > 1) warnings.push("Printed report dates disagree; the snapshot date and date-based calculations stay Unknown until staff review.");
+  if (scoreDates.size > 1) warnings.push("Printed score dates disagree; the score date stays Unknown until staff review.");
 
   const scores: ExtractedScore[] = [];
   const fields: ExtractedField[] = [];
@@ -99,6 +105,10 @@ export function parseReportText(rawPages: PageText[], opts: ParseOptions = {}): 
     fieldKeys.set(key, field);
     warnings.push(`Page ${field.page}: conflicting ${field.key.replace(/_/g, " ")} values were kept for review; neither was treated as confirmed.`);
   };
+
+  const format = readFormatSummaries(pages, scoreDate, ocrPages);
+  scores.push(...format.scores);
+  format.fields.forEach(pushField);
 
   let blockIdx = 0;
   let ambiguousScoreRows = 0;
@@ -173,7 +183,10 @@ export function parseReportText(rawPages: PageText[], opts: ParseOptions = {}): 
       // ---- Summary fields ----
       const fr = FIELD_ROWS.find(([re]) => re.test(line));
       if (fr) {
-        const [label, rest] = labelAndRest(line);
+        // Consume the entire label first: the "2" in Inquiries (2 Years)
+        // is a window, not an inquiry count or a bureau column.
+        const label = line.match(fr[0])?.[0] ?? "";
+        const rest = line.slice(label.length).replace(/^\s*:\s*/, "");
         const nums = rowValues(rest);
         const isPct = fr[1] === "utilization_pct";
         let assign: [Bureau, number][] = [];
@@ -238,6 +251,14 @@ export function parseReportText(rawPages: PageText[], opts: ParseOptions = {}): 
       existing.confidence = "low";
       warnings.push(`Page ${derived.page}: dated inquiry listing and printed ${derived.key.replace(/_/g, " ")} summary differ; the value requires review.`);
     }
+  }
+
+  // Repeated score cards with disagreeing values/models are never silently preferred.
+  for (const bureau of bureausDetected) {
+    const own = scores.filter((score) => score.bureau === bureau);
+    if (new Set(own.map((score) => `${score.model ?? "unknown"}|${score.value}`)).size <= 1) continue;
+    own.forEach((score) => { score.confidence = "low"; score.needsReview = true; });
+    warnings.push(`Conflicting score readings for ${bureau} were kept for staff review.`);
   }
 
   // OCR provenance is page-specific and never upgrades a value to verified.
