@@ -46,6 +46,10 @@ function Run-Program([string]$stage,[string]$exe,[string[]]$arguments) {
         $process = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory $repo -NoNewWindow -PassThru -Wait -RedirectStandardOutput $outFile -RedirectStandardError $errFile -ErrorAction Stop
         $exit = [int]$process.ExitCode
         $tail = @(Get-Content $errFile -Tail 8 -ErrorAction SilentlyContinue)
+        if($tail.Count -eq 0) {
+            # TypeScript reports compiler errors on stdout, not stderr.
+            $tail = @(Get-Content $outFile -Tail 12 -ErrorAction SilentlyContinue)
+        }
         if($exit -eq 0) {
             Status $stage 'PASS' ("exit 0, logs: "+$stage)
             return $true
@@ -98,6 +102,8 @@ try {
     $null = Run-Program 'smartcredit_html_tests' $bun @('run','test','src/lib/credit-report-parser/smartcredit-html.test.ts')
     $null = Run-Program 'typescript' $bunx @('tsc','--noEmit')
     $null = Run-Program 'all_tests' $bun @('run','test')
+    # Isolate new parser lint problems from unrelated pre-existing source checks.
+    $null = Run-Program 'smartcredit_html_lint' $bunx @('eslint','src/lib/credit-report-parser/smartcredit-html.ts','src/lib/credit-report-parser/smartcredit-html.test.ts')
     $null = Run-Program 'lint' $bun @('run','lint')
     $null = Run-Program 'local_build_no_deploy' $bun @('run','build')
 
