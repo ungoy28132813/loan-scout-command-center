@@ -60,18 +60,32 @@ function Ensure-WingetTool([string]$name,[string]$package) {
 function Run-Check([string]$name,[scriptblock]$run) {
     $safe = $name -replace '[^a-zA-Z0-9_-]','_'
     $dest = Join-Path $out ($safe + ".log")
+    $oldEap = $ErrorActionPreference
+    $code = 1
     try {
+        # Native stderr output can be promoted into an exception by Windows
+        # PowerShell 5.1 when ErrorActionPreference is Stop. Preserve the
+        # program's actual exit code and record its complete stdout/stderr.
+        $ErrorActionPreference = "Continue"
         $global:LASTEXITCODE = 0
-        & $run 2>&1 | Out-File -FilePath $dest -Encoding utf8 -Width 300
+        & $run 2>&1 | ForEach-Object { [string]$_ } | Out-File -FilePath $dest -Encoding utf8 -Width 300
         $code = $LASTEXITCODE
         if($null -eq $code){ $code = 0 }
-        if($code -eq 0){ Record $name "PASS" ("Log: " + $dest); return $true }
-        Record $name "FAIL" ("Exit " + $code + "; log: " + $dest)
-        return $false
     } catch {
-        Record $name "FAIL" ($_.Exception.Message + "; log: " + $dest)
-        return $false
+        ("PowerShell command exception: " + $_.Exception.Message) | Out-File -FilePath $dest -Append -Encoding utf8
+        $code = 1
+    } finally {
+        $ErrorActionPreference = $oldEap
     }
+    if($code -eq 0){ Record $name "PASS" ("Exit 0; log: " + $dest); return $true }
+    $tail = @(Get-Content -Path $dest -Tail 25 -ErrorAction SilentlyContinue)
+    $reason = @($tail | Where-Object { $_ -match '(?i)(error|failed|not found|mismatch|missing|lockfile|denied)' } | Select-Object -Last 4) -join ' | '
+    if(-not $reason){ $reason = @($tail | Select-Object -Last 3) -join ' | ' }
+    $reason = $reason -replace '(?i)(gh[pousr]_[A-Za-z0-9_]{10,})','[REDACTED_TOKEN]'
+    if($reason.Length -gt 480){ $reason = $reason.Substring(0,480) }
+    Record $name "FAIL" ("Exit " + $code + "; " + $reason + "; log: " + $dest)
+    $note.Add(("Check " + $name + " failed, actual process exit " + $code + ". Full diagnostic: " + $dest))
+    return $false
 }
 try {
     Write-Host "Loan Scout Phase 1 | local backend accuracy baseline" -ForegroundColor Cyan
@@ -186,13 +200,36 @@ try {
     $summary += ""
     $summary += ($steps | ForEach-Object { "[{0}] {1}: {2}" -f $_.status,$_.step,$_.detail })
     $summary += ""
-    $summary += $note
+    $summary += @($note.ToArray())
     $summaryFile = Join-Path $out "SUMMARY.txt"
-    $summary -join [Environment]::NewLine | Set-Content -Path $summaryFile -Encoding UTF8
-    [pscustomobject]@{ date=(Get-Date).ToString("o"); repo=$repoName; branch=$branch; commit=$(if($repoReady){$head}else{$null}); stages=@($steps); notes=@($note); goldenBenchmarkPassed=$false } |
-      ConvertTo-Json -Depth 6 | Set-Content -Path (Join-Path $out "RESULTS.json") -Encoding UTF8
-    try { ($summary -join [Environment]::NewLine) | Set-Clipboard } catch {}
+    $summaryText = $summary -join [Environment]::NewLine
+    $summaryText | Set-Content -Path $summaryFile -Encoding UTF8
+    try {
+        $resultObject = [pscustomobject]@{
+            date=(Get-Date).ToString("o")
+            repo=$repoName
+            branch=$branch
+            commit=$(if($repoReady){$head}else{$null})
+            stages=$steps.ToArray()
+            notes=$note.ToArray()
+            goldenBenchmarkPassed=$false
+        }
+        $resultObject | ConvertTo-Json -Depth 6 | Set-Content -Path (Join-Path $out "RESULTS.json") -Encoding UTF8
+        Record "JSON results" "PASS" "RESULTS.json written"
+    } catch {
+        Write-Host ("[WARN] Could not create JSON report: " + $_.Exception.Message) -ForegroundColor Yellow
+        $summaryText += [Environment]::NewLine + ("JSON report error: " + $_.Exception.Message)
+    }
+    # Copy findings every time, including failures and partial runs.
+    # The full stdout/stderr for each command stays in separate Desktop log files.
+    $logFiles = @(Get-ChildItem -Path $out -Filter "*.log" -File -ErrorAction SilentlyContinue)
+    $clipboardText = $summaryText + [Environment]::NewLine +
+        "Command logs:" + [Environment]::NewLine +
+        (($logFiles | ForEach-Object { $_.FullName }) -join [Environment]::NewLine)
+    try { Set-Clipboard -Value $clipboardText -ErrorAction Stop; Write-Host "Summary and log paths copied to clipboard." -ForegroundColor Green }
+    catch { Write-Host ("Clipboard unavailable: " + $_.Exception.Message) -ForegroundColor Yellow }
     Write-Host ""
     Write-Host ("Audit summary: " + $summaryFile) -ForegroundColor Cyan
-    Start-Process explorer.exe -ArgumentList ("/select," + '"' + $summaryFile + '"')
+    try { Start-Process explorer.exe -ArgumentList ("/select," + '"' + $summaryFile + '"') }
+    catch { Write-Host ("Open manually: " + $summaryFile) -ForegroundColor Yellow }
 }
