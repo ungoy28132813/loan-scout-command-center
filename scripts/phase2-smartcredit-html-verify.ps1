@@ -32,11 +32,18 @@ function Status([string]$name,[string]$state,[string]$detail) {
     $color=if($state -eq 'PASS'){'Green'}elseif($state -eq 'FAIL'){'Red'}else{'Yellow'}
     Write-Host ("["+$state+"] "+$name+" - "+$detail) -ForegroundColor $color
 }
-function Run-Program([string]$stage,[string]$exe,[string[]]$args) {
+function Run-Program([string]$stage,[string]$exe,[string[]]$arguments) {
+    # "$args" is an automatic PowerShell variable. It must NEVER be used
+    # as a named parameter here: Windows PowerShell 5.1 overwrites it,
+    # causing Start-Process to receive an empty ArgumentList.
+    if(-not $arguments -or $arguments.Count -eq 0) {
+        Status $stage 'FAIL' 'Internal runner error: missing command arguments'
+        return $false
+    }
     $outFile = Join-Path $out ($stage + '.stdout.log')
     $errFile = Join-Path $out ($stage + '.stderr.log')
     try {
-        $process = Start-Process -FilePath $exe -ArgumentList $args -WorkingDirectory $repo -NoNewWindow -PassThru -Wait -RedirectStandardOutput $outFile -RedirectStandardError $errFile -ErrorAction Stop
+        $process = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory $repo -NoNewWindow -PassThru -Wait -RedirectStandardOutput $outFile -RedirectStandardError $errFile -ErrorAction Stop
         $exit = [int]$process.ExitCode
         $tail = @(Get-Content $errFile -Tail 8 -ErrorAction SilentlyContinue)
         if($exit -eq 0) {
