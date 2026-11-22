@@ -1,7 +1,7 @@
 /**
  * Privacy-first SmartCredit Classic 3B HTML reader.
  *
- * Important: HTML is parsed only into an inert document; do not append its
+ * Important: HTML is parsed only into an inert template; do not append its
  * nodes to the live page or evaluate scripts. No network operations, storage,
  * telemetry or automatic verification occur in this module.
  *
@@ -290,15 +290,18 @@ export function parseSmartCreditClassicHtml(html: string): SmartCreditHtmlResult
     warnings.push("HTML is empty or exceeds the 25 MB safety limit");
     return result;
   }
-  if (typeof DOMParser === "undefined") {
-    warnings.push("Browser DOMParser is unavailable; no HTML was processed");
+  if (typeof document === "undefined") {
+    warnings.push("Browser document is unavailable; no HTML was processed");
     return result;
   }
-  // HTML parsed by DOMParser is an inert document; DO NOT attach parsed nodes to document.
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const main = doc.querySelector("main");
+  // Use a detached HTML template, not DOMParser. An inert template avoids
+  // fetching <img>/<iframe> resources from saved pages and does not run scripts.
+  // NEVER append the template or its content to the live page.
+  const inert = document.createElement("template");
+  inert.innerHTML = html;
+  const main = inert.content.querySelector("main");
   const title = main?.querySelector("h1");
-  if (!main || !title || !/3B Report/i.test(norm(title.textContent)) || !doc.querySelector('html')) {
+  if (!main || !title || !/3B Report/i.test(norm(title.textContent))) {
     warnings.push("Not a recognized SmartCredit Classic 3B HTML report");
     return result;
   }
