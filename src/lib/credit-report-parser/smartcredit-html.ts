@@ -10,7 +10,7 @@
  */
 import type { Bureau } from "./types";
 
-export const SMARTCREDIT_HTML_PARSER_VERSION = "ls-smartcredit-html-0.1.0";
+export const SMARTCREDIT_HTML_PARSER_VERSION = "ls-smartcredit-html-0.2.0";
 
 export type HtmlSource = {
   section: string;
@@ -31,12 +31,30 @@ export type HtmlBureauRow = {
   cells: Partial<Record<Bureau, HtmlCell>>;
 };
 
+export type HtmlPaymentStatusCell = {
+  bureau: Bureau;
+  /** Preserve the exact HTML attribute without guessing what its code means. */
+  statusCodeRaw: string | null;
+  /** Printed mobile labels. These are not normalized into a complete date. */
+  monthRaw: string | null;
+  yearRaw: string | null;
+  needsReview: true;
+  source: HtmlSource;
+};
+
+export type HtmlPaymentHistory = {
+  cells: HtmlPaymentStatusCell[];
+  noneReported: boolean;
+  needsReview: true;
+};
+
 export type HtmlAccountBlock = {
   category: string;
   blockNumber: number;
   creditor: string;
   rows: HtmlBureauRow[];
   lateCounts: Partial<Record<Bureau, { late30: HtmlCell | null; late60: HtmlCell | null; late90: HtmlCell | null }>>;
+  paymentHistory: Partial<Record<Bureau, HtmlPaymentHistory>>;
   needsReview: true;
 };
 
@@ -200,6 +218,53 @@ function lateCell(
   };
 }
 
+/** Read only explicitly marked status cells. Do not interpret color, SVG or codes. */
+function readPaymentHistory(
+  card: Element, category: string, index: number, warnings: string[]
+): Partial<Record<Bureau, HtmlPaymentHistory>> {
+  const out: Partial<Record<Bureau, HtmlPaymentHistory>> = {};
+  const groups = Array.from(card.querySelectorAll("div")).filter((el) => {
+    const first = el.firstElementChild;
+    if (!first || !bureauOf(first.textContent)) return false;
+    return el.querySelector('[data-test="payment-status-cell"]') !== null ||
+      /^none reported$/i.test(norm(el.children[1]?.textContent));
+  });
+
+  for (const group of groups) {
+    const bureau = bureauOf(group.firstElementChild?.textContent);
+    if (!bureau) continue;
+    if (out[bureau]) {
+      warnings.push(category + ": repeated payment-history group for " + bureau);
+      // Do not merge two ambiguous histories or assert one is complete.
+      continue;
+    }
+    const markers = Array.from(group.querySelectorAll('[data-test="payment-status-cell"]'));
+    const cells: HtmlPaymentStatusCell[] = markers.map((marker, i) => {
+      const labels = Array.from(marker.parentElement?.children ?? [])
+        .filter((child) => child.tagName === "SPAN");
+      const status = marker.getAttribute("data-status");
+      return {
+        bureau,
+        statusCodeRaw: status === null || status === "" ? null : status,
+        monthRaw: cellText(labels[0]),
+        yearRaw: cellText(labels[1]),
+        needsReview: true,
+        source: {
+          section: category + "/payment-history",
+          accountBlock: index,
+          row: i,
+          column: BUREAUS.indexOf(bureau) + 1,
+          elementPath: 'payment-history[' + bureau + ']/cell[' + i + ']',
+        },
+      };
+    });
+    const noneReported = markers.length === 0 &&
+      /^none reported$/i.test(norm(group.children[1]?.textContent));
+    out[bureau] = { cells, noneReported, needsReview: true };
+  }
+  return out;
+}
+
 function readScores(scope: Element | null, model: string | null, warnings: string[]): HtmlScore[] {
   if (!scope) {
     warnings.push("Credit Scores section missing");
@@ -343,7 +408,8 @@ export function parseSmartCreditClassicHtml(html: string): SmartCreditHtmlResult
           late90: lateCell(card, "90", bureau, category, index),
         };
       }
-      result.accounts.push({ category, blockNumber: index, creditor, rows, lateCounts, needsReview: true });
+      const paymentHistory = readPaymentHistory(card, category, index, warnings);
+      result.accounts.push({ category, blockNumber: index, creditor, rows, lateCounts, paymentHistory, needsReview: true });
       index++;
     }
   }
