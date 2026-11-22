@@ -52,8 +52,17 @@
 
 For each action: one complete copy/paste PowerShell script or one-liner, minimum questions and manual steps. It must automatically log **ALL stdout, stderr and relevant results**, save a combined file on the real Windows Desktop, copy the complete sanitized results to the Windows clipboard and open File Explorer with the output selected. Never ask the user to paste *script commands* into ChatGPT as though they were execution results. Never silently erase or reset work.
 
+## Latest user-provided audit and real-source structural findings (Nov 21, 2026)
+
+- Windows Phase 2 audit at commit `2321dad`: **202/202 tests passed** across 22 files, including 9 initial SmartCredit HTML tests, `bun install --frozen-lockfile` passed and local production build passed.
+- That same run failed TypeScript due to one `TS4111` bracket-access error in `smartcredit-html.test.ts`, and ESLint failed with `RangeError: Invalid string length` while formatting lint results. Both have corrective commits on the accuracy branch. **Do not describe those corrections as verified until a new Windows run passes.**
+- The saved SmartCredit HTML structural inspection found **27 account blocks** distributed among five categories (11 revolving, 10 installment, 4 other, 1 line of credit, 1 collection), plus **1,464** `data-test="payment-status-cell"` markers using raw `data-status` attributes and month/year labels. Those counts describe the **supplied source**, not the production parser's measured accuracy. The account-group selection bug was corrected to prevent cross-section duplication.
+- The **five private SmartCredit PDFs** total 73 pages, include Classic and Ultra 4K 3B variants and include a PDF containing visible export placeholders on some pages. The user confirms the dashboard was fully loaded before PDF download. Refer to `docs/SMARTCREDIT_PDF_REFERENCE_CASES.md`; do not falsely blame user timing.
+- New synthetic tests cover 27-account group isolation, mortgage account section, and raw status-cell provenance without inferring payment meaning. These newer tests are committed but **not yet verified** on Windows.
+- Do not treat a blank page with a loader graphic as a scanned page. Missing source remains unknown, not a confirmed deletion.
+
 ## Immediate next action
 
-Run `scripts/phase2-smartcredit-html-verify.ps1` on Windows and inspect its copied full output. Address any failures on the feature branch, then verify the SmartCredit HTML reader with a locally held, manually checked golden report. Only after that integrate it into the upload flow. Continue with PDF geometry and multi-engine validation afterward.
+Run the latest `scripts/phase2-smartcredit-html-verify.ps1` from the private branch on Windows and inspect its **automatically copied full stdout/stderr output**. Require the targeted parser tests,  `tsc --noEmit`, all tests, targeted ESLint, full ESLint and local build to pass before calling the current fixes verified. Then validate the SmartCredit HTML reader with locally held real-source golden labels. Only after that integrate it into the upload flow. Continue with PDF geometry and multi-engine validation afterward.
 
 This file is a durable project continuity note. It supplements rather than overrides the repository's security/role rules and owner approvals.
