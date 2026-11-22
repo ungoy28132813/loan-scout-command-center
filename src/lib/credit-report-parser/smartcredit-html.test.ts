@@ -107,6 +107,37 @@ describe("SmartCredit Classic HTML source-structured parser (synthetic data)", (
     expect(document.querySelector("h1")).toBeNull();
   });
 
+  it("keeps all five real-layout account categories isolated and preserves every synthetic block", () => {
+    // Matches the five section shapes/counts observed in the supplied HTML
+    // without copying a single client account name or financial value.
+    const categories: Array<[string, number]> = [
+      ["Revolving Accounts", 11],
+      ["Installment Accounts", 10],
+      ["Other Accounts", 4],
+      ["Line of Credit Accounts", 1],
+      ["Collections Accounts", 1],
+    ];
+    const sections = categories.map(([name, count]) =>
+      section(name, Array.from({ length: count }, (_, i) => account("FICTIONAL BANK " + i)).join(""))
+    ).join("");
+    const parsed = parseSmartCreditClassicHtml(synthetic({ accounts: sections }));
+    expect(parsed.accounts).toHaveLength(27);
+    for (const [name, count] of categories) {
+      const matching = parsed.accounts.filter((x) => x.category === name);
+      expect(matching).toHaveLength(count);
+      expect(matching.map((x) => x.blockNumber)).toEqual(Array.from({ length: count }, (_, i) => i));
+      expect(matching.every((x) => x.needsReview)).toBe(true);
+    }
+  });
+
+  it("recognizes a mortgage account section without treating it as a revolving account", () => {
+    const parsed = parseSmartCreditClassicHtml(synthetic({
+      accounts: section("Mortgage Accounts", account("FICTIONAL MORTGAGE")),
+    }));
+    expect(parsed.accounts).toHaveLength(1);
+    expect(parsed.accounts[0]?.category).toBe("Mortgage Accounts");
+  });
+
   it("rejects unrelated HTML without falsely extracting data", () => {
     const r = parseSmartCreditClassicHtml('<html><body><main><h1>Other website</h1></main></body></html>');
     expect(r.status).toBe("unreadable");
