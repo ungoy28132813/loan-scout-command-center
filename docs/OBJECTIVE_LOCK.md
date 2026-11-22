@@ -61,6 +61,14 @@ For each action: one complete copy/paste PowerShell script or one-liner, minimum
 - New synthetic tests cover 27-account group isolation, mortgage account section, and raw status-cell provenance without inferring payment meaning. These newer tests are committed but **not yet verified** on Windows.
 - Do not treat a blank page with a loader graphic as a scanned page. Missing source remains unknown, not a confirmed deletion.
 
+## Latest Phase 2 rerun and local-change preservation (Nov 21, 2026)
+
+- User's most recent Phase 2 run stopped **before any tests** because their original Windows verification clone had uncommitted changes. That is a safeguard, not a parser defect. Do not ask for manual resets, stashes, or cleanups.
+- `scripts/phase2-smartcredit-html-verify.ps1` was updated to **preserve every original working-tree file**. It reads the status without listing content, fetches the branch into Git metadata, then creates or reuses a separate clean **detached verification Git worktree** under `%LOCALAPPDATA%\LoanScout\AccuracyPhase2`. A dirty preexisting verifier gets a fresh alternate path, never a destructive reset or overwrite.
+- **This fix is committed but not yet executed on the user's Windows machine.** Prior verified results remain 202/202 tests, with TypeScript and ESLint failures from the earlier commit; newer fixes remain unverified.
+- Every future PowerShell script must copy complete sanitized stdout/stderr and machine-readable results to the clipboard and store on Desktop. Keep using one copy-paste command, automatic Explorer selection and a project-completion percentage. Do not replace clipboard results with a generic process exit message after the report was generated.
+- Source validation must preserve the five private SmartCredit PDFs and saved HTML in conversation context, use synthetic non-PII fixtures in GitHub, and flag rendered loading-placeholder source pages even though the user waited for the dashboard to load.
+
 ## Immediate next action
 
 Run the latest `scripts/phase2-smartcredit-html-verify.ps1` from the private branch on Windows and inspect its **automatically copied full stdout/stderr output**. Require the targeted parser tests,  `tsc --noEmit`, all tests, targeted ESLint, full ESLint and local build to pass before calling the current fixes verified. Then validate the SmartCredit HTML reader with locally held real-source golden labels. Only after that integrate it into the upload flow. Continue with PDF geometry and multi-engine validation afterward.
