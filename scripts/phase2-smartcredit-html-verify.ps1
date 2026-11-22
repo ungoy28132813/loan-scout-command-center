@@ -119,12 +119,28 @@ try {
     $summaryLines += @($results.ToArray() | ForEach-Object {'['+$_.status+'] '+$_.stage+' '+$_.detail})
     $summaryText = $summaryLines -join [Environment]::NewLine
     $summaryText | Set-Content -Path $summaryPath -Encoding UTF8
+    $jsonPath = Join-Path $out 'RESULTS.json'
+    try {
+        [pscustomobject]@{
+            runDate=(Get-Date -Format o)
+            branch=$branch
+            checkout=$repo
+            passed=$passed
+            failed=$failed
+            stages=$results.ToArray()
+            currentOverallCompletionPercentProvisional=20
+            independentGoldenAccuracyVerified=$false
+            automaticallyDeployed=$false
+        } | ConvertTo-Json -Depth 7 | Set-Content -LiteralPath $jsonPath -Encoding UTF8
+    } catch {
+        Write-Host ('[WARN] Could not write RESULTS.json: '+$_.Exception.Message) -ForegroundColor Yellow
+    }
 
     if($transcriptOn){try{Stop-Transcript|Out-Null}catch{}}
 
     $sections=New-Object 'System.Collections.Generic.List[string]'
     $sections.Add($summaryText)
-    foreach($file in @(Get-ChildItem -LiteralPath $out -File | Where-Object {$_.Extension -eq '.log'} | Sort-Object Name)){
+    foreach($file in @(Get-ChildItem -LiteralPath $out -File | Where-Object {$_.Extension -in @('.log','.json') } | Sort-Object Name)){
         try{$sections.Add(('===== '+$file.Name+' =====')+[Environment]::NewLine+[IO.File]::ReadAllText($file.FullName))}
         catch{$sections.Add(('FAILED TO READ '+$file.Name+': '+$_.Exception.Message))}
     }
