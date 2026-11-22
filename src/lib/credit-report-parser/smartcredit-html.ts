@@ -164,7 +164,10 @@ function findAccountGroup(root: Element, name: string): Element | null {
   for (let p = heading.parentElement; p && p !== root; p = p.parentElement) {
     const children = Array.from(p.children);
     const cards = children.filter((child) => child.querySelector("h5"));
-    if (cards.length && children.some((child) => child.contains(heading))) return p;
+    // An account category must contain exactly one h4. Otherwise a broad
+    // ancestor containing ALL categories will duplicate/misclassify accounts.
+    if (cards.length && p.querySelectorAll("h4").length === 1 &&
+        children.some((child) => child.contains(heading))) return p;
   }
   return null;
 }
