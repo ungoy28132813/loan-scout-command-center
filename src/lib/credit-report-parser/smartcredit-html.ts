@@ -69,6 +69,7 @@ export type SmartCreditHtmlResult = {
 };
 
 const ACCOUNT_SECTIONS = [
+  "Mortgage Accounts",
   "Revolving Accounts",
   "Installment Accounts",
   "Other Accounts",
