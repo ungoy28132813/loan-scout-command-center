@@ -22,6 +22,11 @@ $desktop = [Environment]::GetFolderPath("Desktop")
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $out = Join-Path $desktop ("LoanScout-Accuracy-Audit-" + $stamp)
 New-Item -ItemType Directory -Force -Path $out | Out-Null
+# Capture setup and console output on this computer.
+$transcriptActive = $false
+$transcriptPath = Join-Path $out "console-transcript.log"
+try { Start-Transcript -Path $transcriptPath -Force -ErrorAction Stop | Out-Null; $transcriptActive = $true }
+catch { Write-Host ("[WARN] PowerShell transcript unavailable: " + $_.Exception.Message) -ForegroundColor Yellow }
 $steps = New-Object System.Collections.Generic.List[object]
 $note = New-Object System.Collections.Generic.List[string]
 $success = $false
@@ -220,16 +225,45 @@ try {
         Write-Host ("[WARN] Could not create JSON report: " + $_.Exception.Message) -ForegroundColor Yellow
         $summaryText += [Environment]::NewLine + ("JSON report error: " + $_.Exception.Message)
     }
-    # Copy findings every time, including failures and partial runs.
-    # The full stdout/stderr for each command stays in separate Desktop log files.
-    $logFiles = @(Get-ChildItem -Path $out -Filter "*.log" -File -ErrorAction SilentlyContinue)
-    $clipboardText = $summaryText + [Environment]::NewLine +
-        "Command logs:" + [Environment]::NewLine +
-        (($logFiles | ForEach-Object { $_.FullName }) -join [Environment]::NewLine)
-    try { Set-Clipboard -Value $clipboardText -ErrorAction Stop; Write-Host "Summary and log paths copied to clipboard." -ForegroundColor Green }
-    catch { Write-Host ("Clipboard unavailable: " + $_.Exception.Message) -ForegroundColor Yellow }
-    Write-Host ""
+    # Close transcript before collecting files, to flush its final output.
+    if($transcriptActive){
+        try { Stop-Transcript -ErrorAction Stop | Out-Null }
+        catch { Write-Host ("[WARN] Transcript close failed: " + $_.Exception.Message) -ForegroundColor Yellow }
+    }
+    # Include ALL standard output, standard error and test logs, not just paths.
+    # This reads only the newly created audit folder. It never opens .env
+    # or raw credit-report files.
+    $reportParts = New-Object System.Collections.Generic.List[string]
+    $reportParts.Add($summaryText)
+    $jsonFile = Join-Path $out "RESULTS.json"
+    if(Test-Path $jsonFile) {
+        $reportParts.Add(("==== RESULTS.json ====" + [Environment]::NewLine + [IO.File]::ReadAllText($jsonFile)))
+    }
+    $logFiles = @(Get-ChildItem -Path $out -Filter "*.log" -File -ErrorAction SilentlyContinue | Sort-Object Name)
+    foreach($logFile in $logFiles){
+        try {
+            $reportParts.Add(("==== " + $logFile.Name + " ====" + [Environment]::NewLine + [IO.File]::ReadAllText($logFile.FullName)))
+        } catch {
+            $reportParts.Add(("==== " + $logFile.Name + " ====" + [Environment]::NewLine + "READ ERROR: " + $_.Exception.Message))
+        }
+    }
+    $reportParts.Add(("REPORT FOLDER: " + $out))
+    $fullOutput = $reportParts -join ([Environment]::NewLine + [Environment]::NewLine)
+    # Mask recognizable access tokens in shareable text. Original log files
+    # remain on the user's computer, unchanged.
+    $safeOutput = $fullOutput -replace '(?i)(?:ghp_|gho_|ghu_|ghs_|ghr_|github_pat_)[A-Za-z0-9_]{15,}', '[REDACTED_GITHUB_TOKEN]'
+    $safeOutput = $safeOutput -replace '(?i)\b(?:sk-[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9_-]{16,})\b', '[REDACTED_API_KEY]'
+    $fullReportPath = Join-Path $out "CLIPBOARD_FULL_OUTPUT.txt"
+    try {
+        [IO.File]::WriteAllText($fullReportPath, $safeOutput, (New-Object System.Text.UTF8Encoding($false)))
+        Set-Clipboard -Value $safeOutput -ErrorAction Stop
+        Write-Host ("Full audit output copied to Windows clipboard (" + $safeOutput.Length + " characters).") -ForegroundColor Green
+    } catch {
+        Write-Host ("[WARN] Full clipboard copy failed: " + $_.Exception.Message) -ForegroundColor Yellow
+        try { Set-Clipboard -Value ($summaryText + [Environment]::NewLine + "Full report: " + $fullReportPath) -ErrorAction Stop } catch {}
+    }
     Write-Host ("Audit summary: " + $summaryFile) -ForegroundColor Cyan
-    try { Start-Process explorer.exe -ArgumentList ("/select," + '"' + $summaryFile + '"') }
-    catch { Write-Host ("Open manually: " + $summaryFile) -ForegroundColor Yellow }
+    Write-Host ("Complete combined output: " + $fullReportPath) -ForegroundColor Cyan
+    try { Start-Process explorer.exe -ArgumentList ("/select," + '"' + $fullReportPath + '"') }
+    catch { Write-Host ("Open manually: " + $fullReportPath) -ForegroundColor Yellow }
 }
