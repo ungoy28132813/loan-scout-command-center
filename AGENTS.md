@@ -50,7 +50,7 @@ use the editor.
 
 
 ## Codex continuity
-- For credit-report extraction work, also read `docs/OBJECTIVE_LOCK.md` and `docs/CREDIT_REPORT_ACCURACY_PHASE1.md`; keep the accuracy-first objective, verified-percentage progress updates and full Windows clipboard diagnostics. Do not treat unrun code/tests as completed.
+- For credit-report extraction work, also read `docs/OBJECTIVE_LOCK.md`, `docs/CREDIT_REPORT_ACCURACY_PHASE1.md`, and `docs/SMARTCREDIT_PDF_REFERENCE_CASES.md`; keep the accuracy-first objective, five private PDF reference cases, verified-percentage progress updates and full Windows clipboard diagnostics. Do not assume source-export loading placeholders prove user downloaded early. Do not treat unrun code/tests as completed.
 - Before working, read `docs/CODEX_HANDOFF.md`, `docs/BUILD_QUEUE.md`, and `roadmap.md`. The handoff preserves the approved Q1-90 decisions and the partial Section 07 checkpoint.
 - Continue this existing application. Reconcile current code with the recorded queue; do not restart the scaffold or treat partial work as finished.
 - Keep the repository private, preserve the Lovable-managed block above, coordinate writers, and do not deploy production or activate lender policies without explicit owner approval.
