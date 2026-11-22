@@ -3,8 +3,8 @@
 .SYNOPSIS
   Verify Loan Scout SmartCredit HTML parser changes on Windows.
 .DESCRIPTION
-  Safe read-only verification: fetches isolated branch, installs locked dependencies,
-  tests the new parser, runs all tests, checks TypeScript/lint and builds locally.
+  Safe verification: leaves the original checkout untouched, creates/updates a clean
+  Git worktree from the feature branch, runs parser/all tests, TypeScript/lint/build locally.
   Saves stdout/stderr and a sanitized complete report on Desktop, then copies it
   to Windows clipboard automatically. Never uploads reports, deploys or merges.
 #>
@@ -32,7 +32,7 @@ function Status([string]$name,[string]$state,[string]$detail) {
     $color=if($state -eq 'PASS'){'Green'}elseif($state -eq 'FAIL'){'Red'}else{'Yellow'}
     Write-Host ("["+$state+"] "+$name+" - "+$detail) -ForegroundColor $color
 }
-function Run-Program([string]$stage,[string]$exe,[string[]]$arguments) {
+function Run-Program([string]$stage,[string]$exe,[string[]]$arguments,[string]$workingDirectory = $repo) {
     # "$args" is an automatic PowerShell variable. It must NEVER be used
     # as a named parameter here: Windows PowerShell 5.1 overwrites it,
     # causing Start-Process to receive an empty ArgumentList.
@@ -43,7 +43,7 @@ function Run-Program([string]$stage,[string]$exe,[string[]]$arguments) {
     $outFile = Join-Path $out ($stage + '.stdout.log')
     $errFile = Join-Path $out ($stage + '.stderr.log')
     try {
-        $process = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory $repo -NoNewWindow -PassThru -Wait -RedirectStandardOutput $outFile -RedirectStandardError $errFile -ErrorAction Stop
+        $process = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory $workingDirectory -NoNewWindow -PassThru -Wait -RedirectStandardOutput $outFile -RedirectStandardError $errFile -ErrorAction Stop
         $exit = [int]$process.ExitCode
         $tail = @(Get-Content $errFile -Tail 8 -ErrorAction SilentlyContinue)
         if($tail.Count -eq 0) {
@@ -78,19 +78,68 @@ try {
     if($LASTEXITCODE -ne 0 -or $origin -notmatch 'github\.com[:/]ungoy28132813/loan-scout-command-center(?:\.git)?$'){
         throw 'Unrecognized Git remote. No changes made.'
     }
-    $changes = @(& $git -C $repo status --porcelain)
-    if($changes.Count -gt 0){
-        Status 'Git status' 'FAIL' 'Uncommitted local changes detected. Refusing to overwrite or pull.'
-        throw 'Local changes require review before automated verification.'
+    # The Phase 1 checkout may contain user edits. Read its status but NEVER
+    # reset, stash, pull, clean, checkout or otherwise change its working files.
+    $primaryCheckout = $repo
+    $changes = @(& $git -C $primaryCheckout status --porcelain)
+    if($LASTEXITCODE -ne 0){throw 'Cannot read the original checkout status.'}
+    if($changes.Count -gt 0) {
+        Status 'Original checkout' 'WARN' ("Preserving "+$changes.Count+" local changes without modification")
+    } else {
+        Status 'Original checkout' 'PASS' 'No local changes; will still verify in separate worktree'
     }
-    $current = (& $git -C $repo branch --show-current | Out-String).Trim()
-    if($current -ne $branch){throw ('Current branch is '+$current+'; refusing automatic switch.')}
-    $null = Run-Program 'git_fetch' $git @('fetch','origin',$branch)
-    if($results[$results.Count-1].status -ne 'PASS'){throw 'Git fetch failed.'}
-    $null = Run-Program 'git_pull_ff_only' $git @('pull','--ff-only','origin',$branch)
-    if($results[$results.Count-1].status -ne 'PASS'){throw 'Git pull failed.'}
+
+    # Fetch updates only Git objects / remote refs. It does not touch working
+    # files. Test/build commands execute exclusively in the verification worktree.
+    if(-not (Run-Program 'git_fetch' $git @('fetch','origin',$branch) $primaryCheckout)) {
+        throw 'Git fetch failed. Original working files remain untouched.'
+    }
+    $verifyRoot = Join-Path $env:LOCALAPPDATA 'LoanScout\AccuracyPhase2'
+    [IO.Directory]::CreateDirectory($verifyRoot) | Out-Null
+    $verifyRepo = Join-Path $verifyRoot 'clean-verification-worktree'
+    $makeNewWorktree = $true
+    if(Test-Path $verifyRepo) {
+        if(Test-Path (Join-Path $verifyRepo '.git')) {
+            $verifyOrigin = (& $git -C $verifyRepo remote get-url origin | Out-String).Trim()
+            if($LASTEXITCODE -ne 0 -or $verifyOrigin -ne $origin) {
+                Status 'Verification checkout' 'WARN' 'Existing verification path has a different remote; leaving it untouched'
+            } else {
+                $verifyChanges = @(& $git -C $verifyRepo status --porcelain)
+                if($LASTEXITCODE -ne 0){throw 'Unable to check verification worktree status.'}
+                if($verifyChanges.Count -eq 0) {
+                    # Update ONLY the pristine dedicated verifier checkout.
+                    if(-not (Run-Program 'git_update_verification_worktree' $git @('checkout','--detach',('refs/remotes/origin/'+$branch)) $verifyRepo)) {
+                        throw 'Could not update clean verification worktree. Original checkout unaffected.'
+                    }
+                    $makeNewWorktree = $false
+                } else {
+                    Status 'Verification checkout' 'WARN' 'Prior verifier contains local changes; will use a new isolated worktree'
+                }
+            }
+        } else {
+            Status 'Verification checkout' 'WARN' 'Verification path exists and is not a worktree; leaving it untouched'
+        }
+        if($makeNewWorktree) {
+            # Use an unused directory instead of overwriting a user's files.
+            $verifyRepo = Join-Path $verifyRoot ('clean-verification-'+[guid]::NewGuid().ToString('N'))
+        }
+    }
+    if($makeNewWorktree) {
+        # Git worktree is efficient: reuse the existing Git object database while
+        # checking out a fresh, detached copy that is safe to build and test.
+        # Quoting is needed when a Windows profile path contains spaces.
+        $quotedPath = '"' + $verifyRepo + '"'
+        if(-not (Run-Program 'git_create_verification_worktree' $git @('worktree','add','--detach',$quotedPath,('refs/remotes/origin/'+$branch)) $primaryCheckout)) {
+            throw 'Unable to create clean verification worktree. Original checkout unaffected.'
+        }
+    }
+    $repo = $verifyRepo
     $hash = (& $git -C $repo rev-parse HEAD | Out-String).Trim()
-    Status 'Source checkout' 'PASS' ('branch '+$branch+' at '+$hash)
+    if($LASTEXITCODE -ne 0 -or -not $hash){throw 'Verification checkout HEAD could not be read.'}
+    $expected = (& $git -C $primaryCheckout rev-parse ('refs/remotes/origin/'+$branch) | Out-String).Trim()
+    if($LASTEXITCODE -ne 0 -or $hash -ne $expected){throw 'Verification checkout does not match the fetched branch.'}
+    Status 'Source checkout' 'PASS' ('detached clean verification worktree at '+$hash)
+    Status 'Original files preserved' 'PASS' $primaryCheckout
 
     $module = Join-Path $repo 'src\lib\credit-report-parser\smartcredit-html.ts'
     $tests = Join-Path $repo 'src\lib\credit-report-parser\smartcredit-html.test.ts'
@@ -126,7 +175,8 @@ try {
         ('Passed checks: '+$passed),
         ('Failed checks: '+$failed),
         'Source branch: feature/credit-report-accuracy-phase1',
-        ('Local checkout: '+$repo),
+        ('Verification worktree: '+$repo),
+        ('Original checkout (not overwritten): '+(Join-Path $env:LOCALAPPDATA 'LoanScout\AccuracyPhase1\repository')),
         'Security note: tracked .env requires private review; never paste its values.'
     )
     $summaryLines += @($results.ToArray() | ForEach-Object {'['+$_.status+'] '+$_.stage+' '+$_.detail})
