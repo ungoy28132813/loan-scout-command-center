@@ -6,7 +6,21 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  {
+    // Generated build artifacts can contain huge minified files. Linting them
+    // produced an ESLint stylish-formatter RangeError on the Windows audit.
+    // Keep all application source and tests linted; ignore only generated output.
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.output/**",
+      "**/.vinxi/**",
+      "**/.nitro/**",
+      "**/.tanstack/**",
+      "**/.wrangler/**",
+      "**/coverage/**",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
