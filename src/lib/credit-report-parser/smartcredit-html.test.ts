@@ -103,7 +103,7 @@ describe("SmartCredit Classic HTML source-structured parser (synthetic data)", (
     const html = synthetic() + '<script>window.__loanscout_untrusted_script = 1</script>';
     const r = parseSmartCreditClassicHtml(html);
     expect(r.scores.length).toBe(2);
-    expect((window as unknown as Record<string, unknown>).__loanscout_untrusted_script).toBeUndefined();
+    expect((window as unknown as Record<string, unknown>)["__loanscout_untrusted_script"]).toBeUndefined();
     expect(document.querySelector("h1")).toBeNull();
   });
 
