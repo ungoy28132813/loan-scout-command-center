@@ -138,6 +138,40 @@ describe("SmartCredit Classic HTML source-structured parser (synthetic data)", (
     expect(parsed.accounts[0]?.category).toBe("Mortgage Accounts");
   });
 
+  it("retains payment-history data-status, month, year and exact bureau without interpreting codes", () => {
+    const history = '<div>' +
+      '<div><div>TransUnion®</div>' +
+      '<div><span>Oct</span><span>25</span><div data-test="payment-status-cell" data-status="C"></div></div>' +
+      '<div><span>Nov</span><span>25</span><div data-test="payment-status-cell" data-status="30"></div></div>' +
+      '</div>' +
+      '<div><div>Experian®</div><p>None Reported</p></div>' +
+      '<div><div>Equifax®</div>' +
+      '<div><span>Dec</span><span>25</span><div data-test="payment-status-cell" data-status="X"></div></div>' +
+      '</div></div>';
+    const parsed = parseSmartCreditClassicHtml(synthetic({
+      accounts: section("Revolving Accounts", account("FICTIONAL BANK", history)),
+    }));
+    const payment = parsed.accounts[0]?.paymentHistory;
+    expect(payment?.transunion?.cells.map((cell) => [cell.monthRaw, cell.yearRaw, cell.statusCodeRaw])).toEqual([
+      ["Oct", "25", "C"],
+      ["Nov", "25", "30"],
+    ]);
+    expect(payment?.transunion?.cells[0]?.source.section).toBe("Revolving Accounts/payment-history");
+    expect(payment?.transunion?.cells[0]?.needsReview).toBe(true);
+    expect(payment?.experian?.noneReported).toBe(true);
+    expect(payment?.experian?.cells).toEqual([]);
+    expect(payment?.equifax?.cells[0]?.statusCodeRaw).toBe("X");
+  });
+
+  it("leaves missing payment-history status codes unknown rather than treating them as current", () => {
+    const history = '<div><div>TransUnion®</div>' +
+      '<div><span>Jan</span><span>26</span><div data-test="payment-status-cell"></div></div></div>';
+    const parsed = parseSmartCreditClassicHtml(synthetic({
+      accounts: section("Revolving Accounts", account("FICTIONAL BANK", history)),
+    }));
+    expect(parsed.accounts[0]?.paymentHistory.transunion?.cells[0]?.statusCodeRaw).toBeNull();
+  });
+
   it("rejects unrelated HTML without falsely extracting data", () => {
     const r = parseSmartCreditClassicHtml('<html><body><main><h1>Other website</h1></main></body></html>');
     expect(r.status).toBe("unreadable");
