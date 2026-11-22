@@ -78,10 +78,20 @@ try {
     Write-Host ("Output directory: " + $out)
     $git = Ensure-WingetTool "git" "Git.Git"
     $gh = Ensure-WingetTool "gh" "GitHub.cli"
-    & $gh auth status 1>$null 2>$null
-    if($LASTEXITCODE -ne 0) {
+    # GitHub CLI writes unauthenticated status to stderr. In Windows PowerShell 5.1,
+    # that can become a terminating error under ErrorActionPreference=Stop.
+    # Probe auth with Continue, restore strict errors, and open browser sign-in if needed.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $null = & $gh auth status 2>&1
+        $authExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if($authExitCode -ne 0) {
         Write-Host "One-time GitHub browser sign-in is required for the private repository." -ForegroundColor Yellow
-        & $gh auth login --web --git-protocol https
+        & $gh auth login --hostname github.com --web --git-protocol https
         if($LASTEXITCODE -ne 0){ throw "GitHub authentication was not completed." }
     }
     Record "GitHub authentication" "PASS" "Connected without storing credentials in audit files"
