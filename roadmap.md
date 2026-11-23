@@ -1,6 +1,7 @@
 # Loan Scout build roadmap
 
 ## Format-aware credit report accuracy (2026-11-21)
+- [ ] Unify staff/client PDF entry point; route SmartCredit Classic/Ultra through coordinate reading with private, counts-only reading diagnostics
 - [ ] Read SmartCredit score grids and three-bureau summary cards using printed bureau order and bounded sections
 - [ ] Read exact inquiry windows and revolving-only utilization; retain Unknown for missing models/cells and conflicts
 - [ ] Verify synthetic parser/PDF workflows, preserve local-only reading and staff acceptance, document limits and commit
