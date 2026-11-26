@@ -30,6 +30,14 @@ export async function saveExtraction(reportId: string, clientId: string, r: Pars
     scores: r.scores.length, fields: r.fields.length, tradelines: r.tradelines.length,
     needs_review: r.scores.filter((s) => s.needsReview).length + r.fields.filter((s) => s.needsReview).length + r.tradelines.filter((s) => s.needsReview).length,
     warnings: r.warnings.slice(0, 20),
+    coordinate_audit: r.diagnostics ? {
+      layout: r.diagnostics.layout,
+      account_blocks: r.diagnostics.accountBlocks,
+      inquiry_entries: r.diagnostics.inquiryEntries,
+      inquiries_reconciled: r.diagnostics.inquiriesReconciled,
+      payment_cells: r.diagnostics.paymentCells,
+      payment_cells_classified: r.diagnostics.paymentCellsClassified,
+    } : null,
   };
   const u = await supabase.from("credit_reports").update({
     extraction_method: "automated", extraction_status: r.status, extraction_summary: summary, extracted_at: new Date().toISOString(), detected_provider: r.provider,
@@ -47,11 +55,28 @@ export async function extractStoredReport(storagePath: string, onProgress?: Read
 }
 
 export async function extractFile(buf: ArrayBuffer, onProgress?: ReadProgress): Promise<ParseResult> {
-  const [{ extractPdfText }, { hasTextLayer }, { parseReportText }] = await Promise.all([import("./pdf"), import("./detect"), import("./parse")]);
-  const ocrBuffer = buf.slice(0); // pdf.js transfers its input to a worker, which detaches the original buffer.
+  const [{ extractPdfText, samplePaymentGridColors }, { hasTextLayer }, { parseReportText }, { parseCoordinates }, { coordinateToParseResult }] = await Promise.all([
+    import("./pdf"), import("./detect"), import("./parse"), import("./coordinates"), import("./smartcredit-adapter"),
+  ]);
+  // pdf.js transfers each input to its worker, detaching that buffer.
+  const ocrBuffer = buf.slice(0);
+  const coordinateBuffer = buf.slice(0);
   const text = await extractPdfText(buf, (done, total) => onProgress?.(done, total, "text"));
   const originalHasTextLayer = hasTextLayer(text.pages);
   const needsOcr = text.pages.filter((page) => page.lines.join("").replace(/\s/g, "").length < 10).map((page) => page.page);
+
+  // Text-based SmartCredit layouts use positioned cells, not visual-line whitespace.
+  // Mixed/scanned reports retain the existing local-OCR and conservative line-parser path.
+  if (originalHasTextLayer && needsOcr.length === 0) {
+    const coordinate = parseCoordinates(text.positionedPages);
+    if (coordinate.recognized) {
+      const cells = coordinate.tradelines.flatMap((tradeline) => Object.values(tradeline.paymentHistory2Years).flatMap((history) => history ?? []));
+      try { await samplePaymentGridColors(coordinateBuffer, cells); }
+      catch { coordinate.warnings.push("Payment-grid colors could not be sampled; text fields were retained and color-only checks stay Unknown."); }
+      return coordinateToParseResult(coordinate, { pageCount: text.pages.length, truncated: text.truncated });
+    }
+  }
+
   let pages = text.pages;
   let ocrPages: number[] = [];
   let ocrTruncated = false;

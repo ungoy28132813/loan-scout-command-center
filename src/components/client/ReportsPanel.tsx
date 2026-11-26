@@ -182,7 +182,7 @@ function Flags({ f }: { f?: Field | undefined }) {
 function AutoExtract({ report, clientId, canEdit, hasData, currentNeedsReview, onDone, onAccepted }: { report: { id: string; extraction_method: string; extraction_status: string; extraction_summary: unknown; documents: unknown }; clientId: string; canEdit: boolean; hasData: boolean; currentNeedsReview: number; onDone: () => void; onAccepted: () => Promise<void> }) {
   const [state, setState] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
-  const summary = report.extraction_summary as { pages?: number; bureaus?: string[]; scores?: number; fields?: number; tradelines?: number; needs_review?: number; ocr_used?: boolean; warnings?: string[] } | null;
+  const summary = report.extraction_summary as { pages?: number; bureaus?: string[]; scores?: number; fields?: number; tradelines?: number; needs_review?: number; ocr_used?: boolean; warnings?: string[]; coordinate_audit?: { layout?: string; account_blocks?: number; inquiry_entries?: number; inquiries_reconciled?: boolean; payment_cells?: number; payment_cells_classified?: number } | null } | null;
   const run = async () => {
     const path = (report.documents as { storage_path?: string } | null)?.storage_path;
     if (!path) return void toast.error("Stored file not found");
@@ -198,6 +198,7 @@ function AutoExtract({ report, clientId, canEdit, hasData, currentNeedsReview, o
     {summary && <div className="rounded border p-3 text-sm">
       <div className="label-caps mb-1 text-muted-foreground">Automatic read summary</div>
       <div>{summary.pages ?? "?"} page(s) · bureaus found: {summary.bureaus?.length ? summary.bureaus.join(", ") : "none"} · {summary.scores ?? 0} score(s), {summary.fields ?? 0} field(s), {summary.tradelines ?? 0} account entr{summary.tradelines === 1 ? "y" : "ies"} · <span className={currentNeedsReview ? "font-semibold text-warning" : ""}>{currentNeedsReview} currently need review</span>{summary.ocr_used ? " · local OCR used" : ""}</div>
+      {summary.coordinate_audit && <div className="mt-1 text-xs text-muted-foreground">Position checks: {summary.coordinate_audit.account_blocks ?? 0} account blocks · {summary.coordinate_audit.inquiry_entries ?? 0} inquiry entries · inquiry totals {summary.coordinate_audit.inquiries_reconciled ? "reconciled" : "need review"} · {summary.coordinate_audit.payment_cells_classified ?? 0}/{summary.coordinate_audit.payment_cells ?? 0} payment-grid cells classified</div>}
       {!!summary.warnings?.length && <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground">{summary.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
     </div>}
     {canEdit && report.extraction_method !== "automated" && !hasData && <div className="flex flex-wrap items-center gap-3">

@@ -36,6 +36,15 @@ export interface ExtractedTradeline {
 }
 export type ExtractionStatus = "awaiting_manual_entry" | "partial" | "unreadable" | "complete_unverified";
 
+export interface ParseDiagnostics {
+  layout: "classic_3b" | "ultra_4k_3b";
+  accountBlocks: number;
+  inquiryEntries: number;
+  inquiriesReconciled: boolean;
+  paymentCells: number;
+  paymentCellsClassified: number;
+}
+
 export interface ParseResult {
   parserVersion: string;
   provider: "smartcredit" | "identityiq" | "myscoreiq" | "unknown";
@@ -52,4 +61,6 @@ export interface ParseResult {
   tradelines: ExtractedTradeline[];
   warnings: string[];
   status: ExtractionStatus;
+  /** Counts-only coordinate checks; never contains report text or client identifiers. */
+  diagnostics?: ParseDiagnostics;
 }

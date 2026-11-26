@@ -155,6 +155,17 @@ export function coordinateToParseResult(
 
   // Tradelines (each block preserved distinctly; never merged by masked prefix)
   const tradelines: ExtractedTradeline[] = [];
+  const accountCountMismatch = new Set<Bureau>();
+  for (const b of BUREAUS) {
+    const expected = integer(rep.summary["Total Accounts"]?.[b]);
+    if (expected == null) continue;
+    const actual = rep.tradelines.filter((tl) => bureauReportsTradeline(tl, b)).length;
+    if (expected !== actual) accountCountMismatch.add(b);
+  }
+  if (accountCountMismatch.size) warnings.push("Account blocks do not reconcile with one or more printed Total Accounts rows; affected accounts require review.");
+  const paymentCells = rep.tradelines.flatMap((tl) => BUREAUS.flatMap((b) => tl.paymentHistory2Years[b] ?? []));
+  const paymentCellsClassified = paymentCells.filter((cell) => cell.status !== null).length;
+  let paymentConflict = false;
   for (const [idx, tl] of rep.tradelines.entries()) {
     const creditor = maskSensitive(tl.creditor).slice(0, 80);
     if (!creditor) continue;
@@ -170,6 +181,9 @@ export function coordinateToParseResult(
       const isOpen = statusTxt ? (/\bopen\b/i.test(statusTxt) ? true : /\bclosed\b/i.test(statusTxt) ? false : null) : null;
       const isCollection = /^collections?/i.test(tl.section) || /collection/i.test(`${payStatus ?? ""} ${typeTxt ?? ""}`);
       const isChargeoff = /charge.?o(?:ff|!)/i.test(`${payStatus ?? ""} ${statusTxt ?? ""}`);
+      const gridLate = (tl.paymentHistory2Years[b] ?? []).some((cell) => cell.status === "30" || cell.status === "60" || cell.status === "90" || cell.status === "CO");
+      const gridConflicts = gridLate && (lateCount === null || lateCount === 0);
+      paymentConflict ||= gridConflicts;
       tradelines.push({
         bureau: b,
         creditor,
@@ -183,10 +197,12 @@ export function coordinateToParseResult(
         isChargeoff,
         reconcileKey: `blk:${idx}`,
         page: tl.page,
-        needsReview: headerOrderIssue || (balance == null && isOpen == null),
+        needsReview: headerOrderIssue || accountCountMismatch.has(b) || gridConflicts || (balance == null && isOpen == null),
       });
     }
   }
+
+  if (paymentConflict) warnings.push("Payment-grid colors conflict with missing or zero late-count fields; affected accounts require review.");
 
   const detected = new Set<Bureau>();
   scores.forEach((s) => detected.add(s.bureau));
@@ -212,5 +228,13 @@ export function coordinateToParseResult(
     tradelines,
     warnings: [...new Set(warnings)].map(maskSensitive),
     status,
+    diagnostics: {
+      layout: rep.variant === "ultra_4k_3b" ? "ultra_4k_3b" : "classic_3b",
+      accountBlocks: rep.tradelines.length,
+      inquiryEntries: rep.inquiries.length,
+      inquiriesReconciled: rep.inquiryAudit.pass,
+      paymentCells: paymentCells.length,
+      paymentCellsClassified,
+    },
   };
 }

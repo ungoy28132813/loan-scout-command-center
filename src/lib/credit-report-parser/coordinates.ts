@@ -140,7 +140,7 @@ export function parseCoordinates(pages: PosPage[]): CoordinateReport {
   const otherProvider = /IdentityIQ|MyScoreIQ|powered by\s+Equifax|Credit Score and Rating/i.test(rawAll);
   const recognized = !otherProvider && ((explicitBrand && /^Personal Information$/m.test(text) && /^Credit Scores$/m.test(text)) || structuralSmart);
   const rep: CoordinateReport = {
-    parserVersion:COORDINATE_VERSION,recognized,variant:recognized ? /Ultra 4K|^Credit Utilization$/m.test(text) ? 'ultra_4k_3b' : 'classic_3b' : 'unknown',
+    parserVersion:COORDINATE_VERSION,recognized,variant:recognized ? /Ultra 4K 3B Report/i.test(rawAll) ? 'ultra_4k_3b' : 'classic_3b' : 'unknown',
     scores:triple(()=>null),scorePage:1,scoreModel:null,personal:{name:triple(()=>null),reportDate:triple(()=>null),previousAddresses:triple(()=>[]),employers:triple(()=>[])},
     summary:{},summaryPages:{},tradelines:[],inquiries:[],inquiryAudit:{headerCount:null,counts:triple(()=>0),expected:triple(()=>null),pass:false,mismatches:[]},warnings:[],
   };

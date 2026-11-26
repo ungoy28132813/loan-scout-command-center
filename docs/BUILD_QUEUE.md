@@ -95,6 +95,15 @@ Lender research, further underwriting inputs, simulators, guided applications/ou
 - A separate live client-browser upload session was not run in this section; client staging and cross-tenant boundaries were exercised by the rollback-only database suite. The actual owner browser workflow and local OCR pipeline were run end to end.
 - No lender-specific utilization simulation or lender rule approval was added. No real client report, credential, external OCR service, or public deployment was used.
 
+### SmartCredit coordinate continuation — 2026-11-26
+
+- Both staff and client upload paths now route text-based SmartCredit Classic/Ultra files through the shared positioned-cell reader before the conservative line parser. Mixed/scanned files retain the bundled local-OCR fallback; other providers retain their existing parser path.
+- Score grids and summary rows follow printed bureau order; account blocks stay separate, split dollar cells remain dollars, report/score dates are populated, and inquiry lookbacks reconcile against printed totals. Printed Ultra revolving utilization is read without treating available credit as a limit.
+- Payment-grid colors are sampled locally with viewport coordinate conversion. Unknown pixels stay Unknown; adverse colors can flag a conflict but never invent a late count. Pixel-sampling failure preserves text results with a warning.
+- The report summary stores counts-only layout diagnostics: account blocks, inquiry reconciliation and classified payment cells. No report text, client name, page image or full account number is added to the diagnostic log.
+- Verification: **203/203 application tests passed**, including new synthetic column-order, dollar, date, account-separation, late-count and cross-foot checks. Three owner-supplied Classic samples completed the real browser pipeline in approximately **1.5–3.1 seconds each**, reconciled account and inquiry totals, and made **zero external requests** with no browser errors. A non-SmartCredit fallback also passed.
+- One Ultra sample printed nine accounts per bureau but yielded eight account blocks; all affected rows remain flagged for review. This is not a claim of complete Ultra accuracy. Exact score models absent from all checked samples remained Unknown, and staff acceptance is still required before matching. No database, lender rule, publication or deployment change was made.
+
 ## Section 03 — Lender products, on-demand research and source review
 
 **State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified.
