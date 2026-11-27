@@ -32,8 +32,10 @@ function report(): CoordinateReport {
     personal: {
       name: triple(() => "SYNTHETIC PERSON"),
       reportDate: triple(() => "2026-06-15"),
+      currentAddresses: triple(() => []),
       previousAddresses: triple(() => []),
       employers: triple(() => []),
+      birthYear: triple(() => null),
     },
     summary: {
       "Total Accounts": triple(() => "1"),

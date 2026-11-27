@@ -18,7 +18,15 @@ export interface Tradeline {
 export interface CoordinateReport {
   parserVersion: string; recognized: boolean; variant: 'classic_3b' | 'ultra_4k_3b' | 'unknown';
   scores: PerBureau<number | null>; scorePage: number; scoreModel: string | null;
-  personal: { name: PerBureau<string | null>; reportDate: PerBureau<string | null>; previousAddresses: PerBureau<string[]>; employers: PerBureau<string[]> };
+  personal: {
+    name: PerBureau<string | null>;
+    reportDate: PerBureau<string | null>;
+    currentAddresses: PerBureau<string[]>;
+    previousAddresses: PerBureau<string[]>;
+    employers: PerBureau<string[]>;
+    /** Only the four-digit year when that is all the report prints; never a fabricated full date. */
+    birthYear: PerBureau<number | null>;
+  };
   summary: Record<string, PerBureau<string | null>>; summaryPages: Record<string, number>;
   tradelines: Tradeline[]; inquiries: { date: string; creditor: string; bureau: Bureau; page: number }[];
   inquiryAudit: { headerCount: number | null; counts: PerBureau<number>; expected: PerBureau<number | null>; pass: boolean; mismatches: Bureau[] };
@@ -26,12 +34,18 @@ export interface CoordinateReport {
 }
 export const EDGE_BAND = 35;
 export const CHROME_BAND = 58;
-export const COORDINATE_VERSION = 'smartcredit-coord-v4';
+export const COORDINATE_VERSION = 'smartcredit-coord-v5';
 const DEFAULT_BOUNDS: ColBounds = { order: ['transunion', 'experian', 'equifax'], labelEnd: 172, split1: 303, split2: 434 };
 const PRINT_CHROME = /(?:member\.smartcredit\.com|^https?:\/\/\S+|^Page \d+ of \d+$|^(?:Classic|Ultra 4K) 3B Report\b|^\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}\s*:\s*\d{2}\s*(?:AM|PM)\b)/i;
 export const triple = <T,>(f: () => T): PerBureau<T> => ({ transunion: f(), experian: f(), equifax: f() });
 export const clean = (s?: string | null): string | null => {
-  const value = (s ?? '').replace(/[®™\u00a0]/g, ' ').replace(/\s+/g, ' ').trim();
+  const value = (s ?? '')
+    // Some SmartCredit embedded fonts encode the "ff" ligature as "!".
+    .replace(/\bo!as\b/gi, 'off as')
+    .replace(/o!(?=\s|$|[,.;:/-])/gi, 'off')
+    .replace(/[®™\u00a0]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return !value || /^(?:[-–—]+|n\/?a|none reported)$/i.test(value) ? null : value;
 };
 export function money(s?: string | null): number | null {
@@ -69,7 +83,10 @@ function join(items: PosItem[]): string {
   for (const it of items) {
     const s = it.str.trim();
     if (s === '®' || s === '™') continue;
-    const attached = previous && (previous.str.trim() === '$' || s === '$' || /^[*%]+$/.test(s) || it.x-(previous.x+previous.w) < 2.2);
+    const gap = previous ? it.x - (previous.x + previous.w) : Infinity;
+    // PDF.js normally keeps words in one item. A visible two-point gap is a word break,
+    // not kerning; only near-overlapping glyph fragments should be attached implicitly.
+    const attached = previous && (previous.str.trim() === '$' || s === '$' || /^[*%]+$/.test(s) || gap < 0.5);
     value += value && !attached ? ` ${s}` : s; previous = it;
   }
   return value.trim();
@@ -121,9 +138,20 @@ const TRADE_LABELS = new Set(['Account Number','High Balance','Last Verified','D
 const SUMMARY = new Set(['Total Accounts','Open Accounts','Closed Accounts','Delinquent','Derogatory','Balances','Payments','Public Records','Inquiries (2 Years)']);
 const NON_HEADING = /^(?:TransUnion|Experian|Equifax|NONE REPORTED|Open|Closed|\d+%\s*Credit Utilization|Last Payment|Payment History|Days Late|This information|Below |The amount of credit|Match\b|No Match\b|Account\b)/i;
 function addresses(lines: string[]): string[] {
-  const out: string[] = []; let buffer: string[] = [];
-  for (const l of lines) { buffer.push(l); if (/,\s*[A-Z]{2}\s+\d{5}/.test(l)) {out.push(buffer.join(', ')); buffer=[];} }
-  if (buffer.length) out.push(buffer.join(', ')); return out;
+  const out: string[] = [];
+  let buffer: string[] = [];
+  for (const line of lines) {
+    buffer.push(line);
+    const candidate = clean(buffer.join(' '));
+    // ZIP may be on the next visual line and may be ZIP+4 without a hyphen.
+    if (candidate && /\b[A-Z]{2},?\s+\d{5}(?:-\d{4}|\d{4})?(?=\s|$)/.test(candidate)) {
+      out.push(candidate);
+      buffer = [];
+    }
+  }
+  const remainder = clean(buffer.join(' '));
+  if (remainder) out.push(remainder);
+  return out;
 }
 function monthCutoff(isoDate: string, months: number): string {
   const d = new Date(`${isoDate}T00:00:00Z`);
@@ -141,7 +169,9 @@ export function parseCoordinates(pages: PosPage[]): CoordinateReport {
   const recognized = !otherProvider && ((explicitBrand && /^Personal Information$/m.test(text) && /^Credit Scores$/m.test(text)) || structuralSmart);
   const rep: CoordinateReport = {
     parserVersion:COORDINATE_VERSION,recognized,variant:recognized ? /Ultra 4K 3B Report/i.test(rawAll) ? 'ultra_4k_3b' : 'classic_3b' : 'unknown',
-    scores:triple(()=>null),scorePage:1,scoreModel:null,personal:{name:triple(()=>null),reportDate:triple(()=>null),previousAddresses:triple(()=>[]),employers:triple(()=>[])},
+    scores:triple(()=>null),scorePage:1,scoreModel:null,personal:{
+      name:triple(()=>null),reportDate:triple(()=>null),currentAddresses:triple(()=>[]),previousAddresses:triple(()=>[]),employers:triple(()=>[]),birthYear:triple(()=>null),
+    },
     summary:{},summaryPages:{},tradelines:[],inquiries:[],inquiryAudit:{headerCount:null,counts:triple(()=>0),expected:triple(()=>null),pass:false,mismatches:[]},warnings:[],
   };
   if (!recognized) return rep;
@@ -306,8 +336,16 @@ export function parseCoordinates(pages: PosPage[]): CoordinateReport {
   for(const b of BUREAUS) {
     rep.personal.name[b]=clean(personal['Name']?.[b].join(' '));
     const raw=personal['Credit Report Date']?.[b].join(' ');rep.personal.reportDate[b]=parseDate(raw);
+    rep.personal.currentAddresses[b]=addresses([...(personal['Current Address']?.[b]??[]),...(personal['Address']?.[b]??[])]);
     rep.personal.previousAddresses[b]=addresses([...(personal['Previous Address']?.[b]??[]),...(personal['Previous Addresses']?.[b]??[])]);
     rep.personal.employers[b]=personal['Employer']?.[b]??[];
+    const birthValues=[...(personal['Date of Birth']?.[b]??[]),...(personal['Birth Year']?.[b]??[])];
+    const birthYears=[...new Set(birthValues.flatMap(value => {
+      const match=value.match(/(?:^|\D)((?:19|20)\d{2})(?:\D|$)/);
+      const year=match ? Number(match[1]) : null;
+      return year && year <= new Date().getUTCFullYear() ? [year] : [];
+    }))];
+    rep.personal.birthYear[b]=birthYears.length===1 ? birthYears[0]! : null;
     rep.inquiryAudit.expected[b]=integer(rep.summary['Inquiries (2 Years)']?.[b]);
   }
   for(const q of rep.inquiries) rep.inquiryAudit.counts[q.bureau]++;

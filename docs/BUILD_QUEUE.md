@@ -104,6 +104,12 @@ Lender research, further underwriting inputs, simulators, guided applications/ou
 - Verification: **203/203 application tests passed**, including new synthetic column-order, dollar, date, account-separation, late-count and cross-foot checks. Three owner-supplied Classic samples completed the real browser pipeline in approximately **1.5–3.1 seconds each**, reconciled account and inquiry totals, and made **zero external requests** with no browser errors. A non-SmartCredit fallback also passed.
 - One Ultra sample printed nine accounts per bureau but yielded eight account blocks; all affected rows remain flagged for review. This is not a claim of complete Ultra accuracy. Exact score models absent from all checked samples remained Unknown, and staff acceptance is still required before matching. No database, lender rule, publication or deployment change was made.
 
+### SmartCredit personal-data and font correction — 2026-11-27
+
+- Coordinate reader v5 preserves visible name word breaks, splits multi-line addresses at five-digit ZIP and ZIP+4 endings (including an unhyphenated ZIP on the next line), captures current addresses, and retains only a printed four-digit birth year rather than inventing a full birth date.
+- SmartCredit's embedded-font `ff`-as-`!` artifact is normalized in structured values, including charge-off and write-off statuses. Existing account separation, Unknown handling, staff acceptance, and local-only processing remain unchanged.
+- **206/206 application tests passed.** A privacy-safe Chromium recheck of the owner-supplied 28-page Classic report passed all four correction checks, retained 27 account blocks and reconciled inquiries, and made zero external requests during extraction. No personal values were printed or added to tests; no database, lender rule, publication or deployment change was made.
+
 ## Section 03 — Lender products, on-demand research and source review
 
 **State: completed for the safely available, documented scope.** The app remains unpublished and is not production certified.

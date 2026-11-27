@@ -1,5 +1,11 @@
 # Loan Scout build roadmap
 
+## SmartCredit personal-data and font fixes (2026-11-27)
+- [x] Preserve visible word gaps in split names and normalize the embedded-font `ff` ligature
+- [x] Split multi-line previous addresses at ZIP/ZIP+4 boundaries; capture current addresses and printed birth year locally
+- [x] Add synthetic regressions and recheck the owner-supplied 28-page Classic report without logging personal values
+- Verification: 206 application tests passed; the supplied report retained 27 account blocks, reconciled inquiries, corrected all inspected ligature artifacts, and made zero external extraction requests.
+
 ## Format-aware credit report accuracy (2026-11-26)
 - [x] Unify staff/client PDF entry point; route text-based SmartCredit Classic/Ultra through coordinate reading with private, counts-only reading diagnostics
 - [x] Read SmartCredit score grids and three-bureau summary cards using printed bureau order and bounded sections

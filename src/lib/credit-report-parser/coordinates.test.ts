@@ -72,6 +72,60 @@ describe("SmartCredit coordinate reader", () => {
     expect(classifyCellColor(70, 190, 110)).toBe("OK");
   });
 
+  it("preserves visible name gaps and captures current address and birth year", () => {
+    const parsed = parseCoordinates([page([
+      item("SmartCredit Classic 3B Report", 40, 790),
+      item("Credit Scores", 40, 740),
+      item("Personal Information", 40, 720),
+      ...headers(700),
+      ...row(680, [["Name", 40]]),
+      { str: "SYNTHETIC", x: 220, y: 680, w: 45 },
+      { str: "PERSON", x: 267.05, y: 680, w: 30 },
+      ...row(680, [["SYNTHETIC PERSON", 350], ["SYNTHETIC PERSON", 480]]),
+      ...row(660, [["Current Address", 40], ["123 TEST ST, SAMPLE CITY, FL", 220], ["123 TEST ST, SAMPLE CITY, FL", 350], ["123 TEST ST, SAMPLE CITY, FL", 480]]),
+      ...row(640, [["347727885", 220], ["347727885", 350], ["347727885", 480]]),
+      ...row(620, [["Date of Birth", 40], ["1996", 220], ["1996", 350], ["1996", 480]]),
+    ])]);
+    expect(parsed.personal.name.transunion).toBe("SYNTHETIC PERSON");
+    expect(parsed.personal.currentAddresses.transunion).toEqual(["123 TEST ST, SAMPLE CITY, FL 347727885"]);
+    expect(parsed.personal.birthYear).toEqual({ transunion: 1996, experian: 1996, equifax: 1996 });
+  });
+
+  it("splits multi-line previous addresses at ZIP and ZIP+4 boundaries", () => {
+    const parsed = parseCoordinates([page([
+      item("SmartCredit Classic 3B Report", 40, 790),
+      item("Credit Scores", 40, 740),
+      item("Personal Information", 40, 720),
+      ...headers(700),
+      ...row(680, [["Previous Address", 40], ["123 TEST ST, SAMPLE CITY, FL", 220], ["NONE REPORTED", 350], ["NONE REPORTED", 480]]),
+      ...row(660, [["347727885", 220], ["--", 350], ["--", 480]]),
+      ...row(640, [["456 EXAMPLE RD, OTHER CITY, NC 27106-2422", 220], ["--", 350], ["--", 480]]),
+    ])]);
+    expect(parsed.personal.previousAddresses.transunion).toEqual([
+      "123 TEST ST, SAMPLE CITY, FL 347727885",
+      "456 EXAMPLE RD, OTHER CITY, NC 27106-2422",
+    ]);
+  });
+
+  it("normalizes the SmartCredit ff ligature without changing charge-off meaning", () => {
+    const parsed = parseCoordinates([page([
+      item("SmartCredit Classic 3B Report", 40, 790),
+      item("Credit Scores", 40, 740),
+      item("Personal Information", 40, 720),
+      item("Summary", 40, 710),
+      item("Collections Accounts", 40, 700),
+      item("SYNTHETIC COLLECTION", 40, 680),
+      ...headers(660),
+      ...row(640, [["Account Number", 40], ["****1111", 220], ["****1111", 350], ["****1111", 480]]),
+      ...row(620, [["Payment Status", 40], ["Collection/Chargeo!", 220], ["Charged o!as bad debt", 350], ["Profit and loss write-o!", 480]]),
+    ])]);
+    expect(parsed.tradelines[0]?.fields["Payment Status"]).toEqual({
+      transunion: "Collection/Chargeoff",
+      experian: "Charged off as bad debt",
+      equifax: "Profit and loss write-off",
+    });
+  });
+
   it("parses dollars as dollars and rejects malformed money", () => {
     expect(money("$378,038")).toBe(378038);
     expect(money("$0.50")).toBe(0.5);
