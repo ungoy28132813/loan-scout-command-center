@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { ParseResult } from "./types";
+import { evaluateCrossFoot, extractSuggestedName, type IntakeExtraction } from "./intake";
 
 export type ReadProgress = (done: number, total: number, stage?: "text" | "ocr") => void;
 
@@ -55,6 +56,11 @@ export async function extractStoredReport(storagePath: string, onProgress?: Read
 }
 
 export async function extractFile(buf: ArrayBuffer, onProgress?: ReadProgress): Promise<ParseResult> {
+  const { result } = await extractFileForIntake(buf, onProgress);
+  return result;
+}
+
+export async function extractFileForIntake(buf: ArrayBuffer, onProgress?: ReadProgress): Promise<IntakeExtraction> {
   const [{ extractPdfText, samplePaymentGridColors }, { hasTextLayer }, { parseReportText }, { parseCoordinates }, { coordinateToParseResult }] = await Promise.all([
     import("./pdf"), import("./detect"), import("./parse"), import("./coordinates"), import("./smartcredit-adapter"),
   ]);
@@ -73,7 +79,10 @@ export async function extractFile(buf: ArrayBuffer, onProgress?: ReadProgress): 
       const cells = coordinate.tradelines.flatMap((tradeline) => Object.values(tradeline.paymentHistory2Years).flatMap((history) => history ?? []));
       try { await samplePaymentGridColors(coordinateBuffer, cells); }
       catch { coordinate.warnings.push("Payment-grid colors could not be sampled; text fields were retained and color-only checks stay Unknown."); }
-      return coordinateToParseResult(coordinate, { pageCount: text.pages.length, truncated: text.truncated });
+      const result = coordinateToParseResult(coordinate, { pageCount: text.pages.length, truncated: text.truncated });
+      const { suggestedName, nameConflict } = extractSuggestedName(coordinate, text.pages);
+      const crossFoot = evaluateCrossFoot(result, coordinate, text.truncated);
+      return { result, suggestedName, nameConflict, crossFoot };
     }
   }
 
@@ -88,5 +97,8 @@ export async function extractFile(buf: ArrayBuffer, onProgress?: ReadProgress): 
     ocrPages = ocr.pages.map((page) => page.page);
     ocrTruncated = ocr.skippedPages > 0;
   }
-  return parseReportText(pages, { truncated: text.truncated, originalHasTextLayer, ocrPages, ocrTruncated });
+  const result = parseReportText(pages, { truncated: text.truncated, originalHasTextLayer, ocrPages, ocrTruncated });
+  const { suggestedName, nameConflict } = extractSuggestedName(null, pages);
+  const crossFoot = evaluateCrossFoot(result, null, text.truncated || ocrTruncated);
+  return { result, suggestedName, nameConflict, crossFoot };
 }
